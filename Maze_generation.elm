@@ -13,10 +13,10 @@ import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y
 
 w = 700
 h = 700
-dt = 0.01
+dt = 0.001
 
-rows = 30
-cols = 30
+rows = 25
+cols = 25
 
 type alias Box = Bool
 
@@ -139,32 +139,35 @@ centerTitle = [ HA.style [ ( "text-align", "center") ] ]
 unvisitedNeighbors : Model -> Matrix.Location -> List Matrix.Location
 unvisitedNeighbors model (row,col) = 
  let n0 = Debug.watch "n0" ([(row, col-1), (row-1, col), (row, col+1), (row+1, col)] )
-     n1 = Debug.watch "n1" (n0 |> List.filter (\l -> fst l > 0 && snd l > 0 && fst l < rows && snd l < cols))
+     n1 = Debug.watch "n1" (n0 |> List.filter (\l -> fst l >= 0 && snd l >= 0 && fst l < rows && snd l < cols))
      n2 = Debug.watch "n2" (n1 |> List.filter (\l -> (Matrix.get l model.boxes) |> withDefault False |> not))
  in n2
 
-update : Action -> Model -> Model
-update action model = 
-  case head model.current of
+update' : Model -> List Matrix.Location -> Model
+update' model current = 
+  case head current of
     Nothing -> model
     Just previous ->
       let neighbors = unvisitedNeighbors model previous
       in 
         if (length neighbors) > 0 then
           let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
-              current = head (drop neighborIndex neighbors) |> withDefault (0,0) |> Debug.watch "current"
-              boxes = Matrix.set current True model.boxes 
-              direction = if fst previous == fst current then right else down
+              nextBox = head (drop neighborIndex neighbors) |> withDefault (0,0) |> Debug.watch "nextBox"
+              boxes = Matrix.set nextBox True model.boxes 
+              direction = if fst previous == fst nextBox then right else down
               doorCell = Debug.watch "doorCell" <|
                 if (direction == down) then 
-                  if (fst previous < fst current) then previous else current
+                  if (fst previous < fst nextBox) then previous else nextBox
                 else
-                  if (snd previous < snd current) then previous else current
+                  if (snd previous < snd nextBox) then previous else nextBox
                 
               doors = Set.remove (doorCell, direction) model.doors 
-          in {boxes=boxes, doors=doors, current=current :: model.current, seed=seed}
+          in {boxes=boxes, doors=doors, current=nextBox :: model.current, seed=seed}
         else
-          model
+          tail current |> withDefault [] |> update' model
+
+update : Action -> Model -> Model
+update action model = update' model model.current 
 
 type Action = Tick 
 
