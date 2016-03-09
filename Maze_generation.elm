@@ -12,8 +12,8 @@ import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y
 w = 700
 h = 700
 
-rows = 40
-cols = 40
+rows = 30
+cols = 30
 
 type alias Box = 
   { visited : Bool
@@ -88,15 +88,30 @@ view model =
                   , y2 <| toString y2value 
                   , redLineStyle ] []
 
+    walls = (List.map wallToLine <| toList model.walls )
+
     borders = [ Svg.line [ x1Min, y1Min, x2Max, y2Min, greenLineStyle ] []
               , Svg.line [ x1Max, y1Min, x2Max, y2Max, greenLineStyle ] []
               , Svg.line [ x1Max, y1Max, x2Min, y2Max, greenLineStyle ] []
               , Svg.line [ x1Min, y1Max, x2Min, y2Min, greenLineStyle ] []
               ]
+
+    showUnvisited (row,column) box =
+       if box.visited then []
+       else [ Svg.circle [ r "0.25"
+                         , fill "purple" 
+                         , cx (toString (toFloat column + 0.5))
+                         , cy (toString (toFloat row + 0.5))
+                         ] [] ]
+
+
+    unvisited = model.boxes 
+                  |> Matrix.mapWithLocation showUnvisited 
+                  |> Matrix.flatten 
+                  |> concat
+
     maze = 
-      Svg.g 
-        []
-        ((List.map wallToLine <| toList model.walls) ++ borders )
+      Svg.g [] <| walls ++ borders ++ unvisited
   in
     div []
       [ div floatLeft [ h2 centerTitle [text "Maze Generator"]
