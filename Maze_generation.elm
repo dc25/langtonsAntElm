@@ -13,10 +13,9 @@ import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y
 
 w = 700
 h = 700
-dt = 0.001
-
 rows = 25
-cols = 20
+cols = 25
+dt = 0.001
 
 type alias Box = Bool
 
@@ -78,17 +77,12 @@ view model =
               ]
 
     doorToLine door = 
-      let side = snd door
-          (deltaX1, deltaY1) = if (side == right) then (1,0) else (0,1)
+      let (deltaX1, deltaY1) = if (snd door == right) then (1,0) else (0,1)
           (row, column) = fst door
-          x1value = column + deltaX1
-          x2value = column + 1
-          y1value = row    + deltaY1
-          y2value = row    + 1
-      in Svg.line [ x1 <| toString x1value
-                  , y1 <| toString y1value
-                  , x2 <| toString x2value
-                  , y2 <| toString y2value 
+      in Svg.line [ x1 <| toString (column + deltaX1)
+                  , y1 <| toString (row    + deltaY1)
+                  , x2 <| toString (column + 1)
+                  , y2 <| toString (row    + 1)
                   , redLineStyle ] []
 
     doors = (List.map doorToLine <| toList model.doors )
@@ -113,8 +107,7 @@ view model =
           Nothing -> []
           Just c -> [circleInBox c "black"]
 
-    maze = 
-      Svg.g [] <| doors ++ borders ++ unvisited ++ current
+    maze = Svg.g [] <| doors ++ borders ++ unvisited ++ current
   in
     div []
       [ div floatLeft [ h2 centerTitle [text "Maze Generator"]
@@ -130,7 +123,6 @@ view model =
                           ] 
                           [ maze ]
                       ]
-
       ] 
 
 floatLeft = [ HA.style [ ("float", "left") ] ]
@@ -148,22 +140,20 @@ update' model current =
     Nothing -> model
     Just previous ->
       let neighbors = unvisitedNeighbors model previous
-      in 
-        if (length neighbors) > 0 then
-          let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
-              nextBox = head (drop neighborIndex neighbors) |> withDefault (0,0) 
-              boxes = Matrix.set nextBox True model.boxes 
-              direction = if fst previous == fst nextBox then right else down
-              doorCell = 
-                if (direction == down) then 
-                  if (fst previous < fst nextBox) then previous else nextBox
-                else
-                  if (snd previous < snd nextBox) then previous else nextBox
-                
-              doors = Set.remove (doorCell, direction) model.doors 
-          in {boxes=boxes, doors=doors, current=nextBox :: model.current, seed=seed}
-        else
-          tail current |> withDefault [] |> update' model
+      in if (length neighbors) > 0 then
+           let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
+               nextBox = head (drop neighborIndex neighbors) |> withDefault (0,0) 
+               boxes = Matrix.set nextBox True model.boxes 
+               direction = if fst previous == fst nextBox then right else down
+               doorCell = 
+                 if (direction == down) then 
+                   if (fst previous < fst nextBox) then previous else nextBox
+                 else
+                   if (snd previous < snd nextBox) then previous else nextBox
+               doors = Set.remove (doorCell, direction) model.doors 
+           in {boxes=boxes, doors=doors, current=nextBox :: model.current, seed=seed}
+         else
+           tail current |> withDefault [] |> update' model
 
 update : Action -> Model -> Model
 update action model = update' model model.current 
