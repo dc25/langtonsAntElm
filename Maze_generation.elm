@@ -1,6 +1,8 @@
+import Maybe exposing (withDefault)
 import Matrix 
 import Random exposing (Seed)
 import Matrix.Random
+import Time exposing (every, second)
 import Set exposing (..)
 import List exposing (..)
 import String exposing (join)
@@ -11,19 +13,24 @@ import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y
 
 w = 700
 h = 700
+dt = 0.01
 
 rows = 30
 cols = 30
 
-type alias Box = 
-  { visited : Bool
-  }
+type alias Box = Bool
 
 type alias Direction = Int
 up = 0
 down = 1
 left = 2
 right = 3
+
+unvisitedNeighbors : Model -> Matrix.Location -> List Matrix.Location
+unvisitedNeighbors model (row,col) = 
+ [(row, col-1), (row-1, col), (row, col+1), (row+1, col)] 
+   |> List.filter (\l -> fst l > 0 && snd l > 0 && fst l < rows && snd l < cols)
+   |> List.filter (\l -> (Matrix.get l model.boxes) |> withDefault False)
 
 type alias Wall = (Matrix.Location, Direction)
 
@@ -53,7 +60,7 @@ init =
       colGenerator = Random.int 0 (cols-1)
       locationGenerator = Random.pair rowGenerator colGenerator
       (c, s)= Random.generate locationGenerator (Random.initialSeed 45)
-  in { boxes = Matrix.matrix rows cols (\location -> { visited = False }) 
+  in { boxes = Matrix.matrix rows cols (\_ -> False ) 
      , walls = initWalls rows cols
      , current = c
      , seed = s
@@ -97,7 +104,7 @@ view model =
               ]
 
     showUnvisited (row,column) box =
-       if box.visited then []
+       if box then []
        else [ Svg.circle [ r "0.25"
                          , fill (if (model.current == (row,column)) then "black" else "yellow")
                          , cx (toString (toFloat column + 0.5))
@@ -131,7 +138,17 @@ view model =
       ] 
 
 
+
 floatLeft = [ HA.style [ ("float", "left") ] ]
 centerTitle = [ HA.style [ ( "text-align", "center") ] ] 
 
-main = view init
+update : Action -> Model -> Model
+update action model = model
+
+type Action = Tick 
+
+tickSignal = (every (dt * second)) |> Signal.map (always Tick)
+
+modelSignal = Signal.foldp update init tickSignal
+
+main = Signal.map view modelSignal 
