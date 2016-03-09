@@ -26,17 +26,11 @@ down = 1
 left = 2
 right = 3
 
-unvisitedNeighbors : Model -> Matrix.Location -> List Matrix.Location
-unvisitedNeighbors model (row,col) = 
- [(row, col-1), (row-1, col), (row, col+1), (row+1, col)] 
-   |> List.filter (\l -> fst l > 0 && snd l > 0 && fst l < rows && snd l < cols)
-   |> List.filter (\l -> (Matrix.get l model.boxes) |> withDefault False)
-
-type alias Wall = (Matrix.Location, Direction)
+type alias Door = (Matrix.Location, Direction)
 
 type alias Model =
   { boxes : Matrix.Matrix Box
-  , walls : Set Wall
+  , doors : Set Door
   , current : Matrix.Location
   , seed : Seed
   }
@@ -45,8 +39,8 @@ type alias Model =
 pairs : List a -> List b -> List (a,b)
 pairs la lb = List.concatMap (\at -> List.map ((,) at) lb) la
 
-initWalls : Int -> Int -> Set Wall
-initWalls rows cols =
+initdoors : Int -> Int -> Set Door
+initdoors rows cols =
   let 
     downAndRight = pairs (pairs [0..rows-2] [0..cols-2]) [down, right] 
     onlyDown = pairs (pairs [0..rows-2] [cols-1]) [down] 
@@ -60,7 +54,7 @@ init =
       locationGenerator = Random.pair rowGenerator colGenerator
       (c, s)= Random.generate locationGenerator (Random.initialSeed 45)
   in { boxes = Matrix.matrix rows cols (\location -> location == c ) 
-     , walls = initWalls rows cols
+     , doors = initdoors rows cols
      , current = c
      , seed = s
      }
@@ -85,10 +79,10 @@ view model =
               , Svg.line [ x1Min, y1Max, x2Min, y2Min, greenLineStyle ] []
               ]
 
-    wallToLine wall = 
-      let side = snd wall
+    doorToLine door = 
+      let side = snd door
           (deltaX1, deltaY1) = if (side == right) then (1,0) else (0,1)
-          (row, column) = fst wall
+          (row, column) = fst door
           x1value = column + deltaX1
           x2value = column + 1
           y1value = row    + deltaY1
@@ -99,7 +93,7 @@ view model =
                   , y2 <| toString y2value 
                   , redLineStyle ] []
 
-    walls = (List.map wallToLine <| toList model.walls )
+    doors = (List.map doorToLine <| toList model.doors )
 
     circleInBox (row,col) color = 
       Svg.circle [ r "0.25"
@@ -119,7 +113,7 @@ view model =
     current = [circleInBox model.current "black"]
 
     maze = 
-      Svg.g [] <| walls ++ borders ++ unvisited ++ current
+      Svg.g [] <| doors ++ borders ++ unvisited ++ current
   in
     div []
       [ div floatLeft [ h2 centerTitle [text "Maze Generator"]
@@ -141,8 +135,33 @@ view model =
 floatLeft = [ HA.style [ ("float", "left") ] ]
 centerTitle = [ HA.style [ ( "text-align", "center") ] ] 
 
+unvisitedNeighbors : Model -> Matrix.Location -> List Matrix.Location
+unvisitedNeighbors model (row,col) = 
+ let n0 = Debug.watch "n0" ([(row, col-1), (row-1, col), (row, col+1), (row+1, col)] )
+     n1 = Debug.watch "n1" (n0 |> List.filter (\l -> fst l > 0 && snd l > 0 && fst l < rows && snd l < cols))
+     n2 = Debug.watch "n2" (n1 |> List.filter (\l -> (Matrix.get l model.boxes) |> withDefault False |> not))
+ in n2
+
 update : Action -> Model -> Model
-update action model = model
+update action model = 
+  let neighbors = Debug.watch "neighbors" (unvisitedNeighbors model model.current)
+  in 
+    if (length neighbors) > 0 then
+      let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
+          previous = Debug.watch "previous" model.current
+          current = head (drop neighborIndex neighbors) |> withDefault (0,0) |> Debug.watch "current"
+          boxes = Matrix.set current True model.boxes 
+          direction = if fst previous == fst current then right else down
+          doorCell = Debug.watch "doorCell" <|
+            if (direction == down) then 
+              if (fst previous < fst current) then previous else current
+            else
+              if (snd previous < snd current) then previous else current
+            
+          doors = Set.remove (doorCell, direction) model.doors 
+      in {boxes=boxes, doors=doors, current=current, seed=seed}
+    else
+      model
 
 type Action = Tick 
 
