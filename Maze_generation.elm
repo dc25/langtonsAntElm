@@ -101,26 +101,22 @@ view model =
 
     walls = (List.map wallToLine <| toList model.walls )
 
-    showUnvisited (row,column) box =
-       if box then []
-       else [ Svg.circle [ r "0.25"
-                         , fill ("yellow")
-                         , cx (toString (toFloat column + 0.5))
-                         , cy (toString (toFloat row + 0.5))
-                         ] [] ]
+    circleInBox (row,col) color = 
+      Svg.circle [ r "0.25"
+      , fill (color)
+      , cx (toString (toFloat col + 0.5))
+      , cy (toString (toFloat row + 0.5))
+      ] [] 
 
+    showUnvisited location box =
+       if box then [] else [ circleInBox location "yellow" ]
 
     unvisited = model.boxes 
                   |> Matrix.mapWithLocation showUnvisited 
                   |> Matrix.flatten 
                   |> concat
 
-    current =
-       [ Svg.circle [ r "0.25"
-       , fill ("black")
-       , cx (toString (toFloat (snd model.current) + 0.5))
-       , cy (toString (toFloat (fst model.current) + 0.5))
-       ] [] ]
+    current = [circleInBox model.current "black"]
 
     maze = 
       Svg.g [] <| walls ++ borders ++ unvisited ++ current
