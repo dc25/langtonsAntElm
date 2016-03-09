@@ -16,7 +16,7 @@ h = 700
 dt = 0.001
 
 rows = 25
-cols = 25
+cols = 20
 
 type alias Box = Bool
 
@@ -138,10 +138,9 @@ centerTitle = [ HA.style [ ( "text-align", "center") ] ]
 
 unvisitedNeighbors : Model -> Matrix.Location -> List Matrix.Location
 unvisitedNeighbors model (row,col) = 
- let n0 = Debug.watch "n0" ([(row, col-1), (row-1, col), (row, col+1), (row+1, col)] )
-     n1 = Debug.watch "n1" (n0 |> List.filter (\l -> fst l >= 0 && snd l >= 0 && fst l < rows && snd l < cols))
-     n2 = Debug.watch "n2" (n1 |> List.filter (\l -> (Matrix.get l model.boxes) |> withDefault False |> not))
- in n2
+  [(row, col-1), (row-1, col), (row, col+1), (row+1, col)]
+    |> List.filter (\l -> fst l >= 0 && snd l >= 0 && fst l < rows && snd l < cols)
+    |> List.filter (\l -> (Matrix.get l model.boxes) |> withDefault False |> not)
 
 update' : Model -> List Matrix.Location -> Model
 update' model current = 
@@ -152,10 +151,10 @@ update' model current =
       in 
         if (length neighbors) > 0 then
           let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
-              nextBox = head (drop neighborIndex neighbors) |> withDefault (0,0) |> Debug.watch "nextBox"
+              nextBox = head (drop neighborIndex neighbors) |> withDefault (0,0) 
               boxes = Matrix.set nextBox True model.boxes 
               direction = if fst previous == fst nextBox then right else down
-              doorCell = Debug.watch "doorCell" <|
+              doorCell = 
                 if (direction == down) then 
                   if (fst previous < fst nextBox) then previous else nextBox
                 else
