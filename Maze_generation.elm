@@ -12,8 +12,8 @@ import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y
 w = 700
 h = 700
 
-rows = 50
-cols = 50
+rows = 30
+cols = 30
 
 type alias Box = 
   { visited : Bool
@@ -61,6 +61,19 @@ init =
 
 view model =
   let
+
+    greenLineStyle = style "stroke:green;stroke-width:0.3"
+    redLineStyle = style "stroke:red;stroke-width:0.1" 
+
+    x1Min = x1 <| toString 0
+    y1Min = y1 <| toString 0
+    x1Max = x1 <| toString cols
+    y1Max = y1 <| toString rows
+    x2Min = x2 <| toString 0
+    y2Min = y2 <| toString 0
+    x2Max = x2 <| toString cols
+    y2Max = y2 <| toString rows
+
     wallToLine wall = 
       let side = snd wall
           (deltaX1, deltaY1) = if (side == right) then (1,0) else (0,1)
@@ -73,26 +86,31 @@ view model =
                   , y1 <| toString y1value
                   , x2 <| toString x2value
                   , y2 <| toString y2value 
-                  , style "stroke:red;stroke-width:0.2" ] []
-    svgPendulum = 
+                  , redLineStyle ] []
+
+    borders = [ Svg.line [ x1Min, y1Min, x2Max, y2Min, greenLineStyle ] []
+              , Svg.line [ x1Max, y1Min, x2Max, y2Max, greenLineStyle ] []
+              , Svg.line [ x1Max, y1Max, x2Min, y2Max, greenLineStyle ] []
+              , Svg.line [ x1Min, y1Max, x2Min, y2Min, greenLineStyle ] []
+              ]
+    maze = 
       Svg.g 
-        [ ]
-        (List.map wallToLine <| toList model.walls)
+        []
+        ((List.map wallToLine <| toList model.walls) ++ borders )
   in
     div []
       [ div floatLeft [ h2 centerTitle [text "Maze Generator"]
-                      , Svg.svg -- svg element to hold pendulum
+                      , Svg.svg 
                           [ version "1.1"
                           , width (toString w)
                           , height (toString h)
-                          , preserveAspectRatio "none"
                           , viewBox (join " " 
                                        [ 0 |> toString
                                        , 0 |> toString
                                        , cols |> toString
                                        , rows |> toString ])
                           ] 
-                          [ svgPendulum ]
+                          [ maze ]
                       ]
 
       ] 
