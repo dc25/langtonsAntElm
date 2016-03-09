@@ -53,7 +53,6 @@ initWalls rows cols =
     onlyRight = pairs (pairs [rows-1] [0..cols-2]) [right] 
   in downAndRight ++ onlyDown ++ onlyRight |> fromList
 
-
 init : Model
 init = 
   let rowGenerator = Random.int 0 (rows-1)
@@ -68,7 +67,6 @@ init =
 
 view model =
   let
-
     greenLineStyle = style "stroke:green;stroke-width:0.3"
     redLineStyle = style "stroke:red;stroke-width:0.1" 
 
