@@ -81,6 +81,12 @@ view model =
     x2Max = x2 <| toString cols
     y2Max = y2 <| toString rows
 
+    borders = [ Svg.line [ x1Min, y1Min, x2Max, y2Min, greenLineStyle ] []
+              , Svg.line [ x1Max, y1Min, x2Max, y2Max, greenLineStyle ] []
+              , Svg.line [ x1Max, y1Max, x2Min, y2Max, greenLineStyle ] []
+              , Svg.line [ x1Min, y1Max, x2Min, y2Min, greenLineStyle ] []
+              ]
+
     wallToLine wall = 
       let side = snd wall
           (deltaX1, deltaY1) = if (side == right) then (1,0) else (0,1)
@@ -96,12 +102,6 @@ view model =
                   , redLineStyle ] []
 
     walls = (List.map wallToLine <| toList model.walls )
-
-    borders = [ Svg.line [ x1Min, y1Min, x2Max, y2Min, greenLineStyle ] []
-              , Svg.line [ x1Max, y1Min, x2Max, y2Max, greenLineStyle ] []
-              , Svg.line [ x1Max, y1Max, x2Min, y2Max, greenLineStyle ] []
-              , Svg.line [ x1Min, y1Max, x2Min, y2Min, greenLineStyle ] []
-              ]
 
     showUnvisited (row,column) box =
        if box then []
@@ -136,8 +136,6 @@ view model =
                       ]
 
       ] 
-
-
 
 floatLeft = [ HA.style [ ("float", "left") ] ]
 centerTitle = [ HA.style [ ( "text-align", "center") ] ] 
