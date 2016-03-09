@@ -12,8 +12,8 @@ import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y
 w = 700
 h = 700
 
-rows = 30
-cols = 30
+rows = 40
+cols = 40
 
 type alias Box = 
   { visited : Bool
@@ -34,7 +34,7 @@ type alias Model =
   , seed : Seed
   }
 
--- is there some built in way of doing this?
+-- is there some better (maybe built in?) way of doing this?
 pairs : List a -> List b -> List (a,b)
 pairs la lb = List.concatMap (\at -> List.map ((,) at) lb) la
 
@@ -42,8 +42,8 @@ initWalls : Int -> Int -> Set Wall
 initWalls rows cols =
   let 
     downAndRight = pairs (pairs [0..rows-2] [0..cols-2]) [down, right] 
-    onlyDown = pairs (pairs [0..rows-2] [cols-1..cols-1]) [down] 
-    onlyRight = pairs (pairs [rows-1..rows-1] [0..cols-2]) [right] 
+    onlyDown = pairs (pairs [0..rows-2] [cols-1]) [down] 
+    onlyRight = pairs (pairs [rows-1] [0..cols-2]) [right] 
   in downAndRight ++ onlyDown ++ onlyRight |> fromList
 
 
