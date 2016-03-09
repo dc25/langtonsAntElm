@@ -99,7 +99,7 @@ view model =
     showUnvisited (row,column) box =
        if box.visited then []
        else [ Svg.circle [ r "0.25"
-                         , fill "purple" 
+                         , fill (if (model.current == (row,column)) then "black" else "yellow")
                          , cx (toString (toFloat column + 0.5))
                          , cy (toString (toFloat row + 0.5))
                          ] [] ]
