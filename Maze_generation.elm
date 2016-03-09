@@ -60,7 +60,7 @@ init =
       colGenerator = Random.int 0 (cols-1)
       locationGenerator = Random.pair rowGenerator colGenerator
       (c, s)= Random.generate locationGenerator (Random.initialSeed 45)
-  in { boxes = Matrix.matrix rows cols (\_ -> False ) 
+  in { boxes = Matrix.matrix rows cols (\location -> location == c ) 
      , walls = initWalls rows cols
      , current = c
      , seed = s
@@ -106,7 +106,7 @@ view model =
     showUnvisited (row,column) box =
        if box then []
        else [ Svg.circle [ r "0.25"
-                         , fill (if (model.current == (row,column)) then "black" else "yellow")
+                         , fill ("yellow")
                          , cx (toString (toFloat column + 0.5))
                          , cy (toString (toFloat row + 0.5))
                          ] [] ]
@@ -117,8 +117,15 @@ view model =
                   |> Matrix.flatten 
                   |> concat
 
+    current =
+       [ Svg.circle [ r "0.25"
+       , fill ("black")
+       , cx (toString (toFloat (snd model.current) + 0.5))
+       , cy (toString (toFloat (fst model.current) + 0.5))
+       ] [] ]
+
     maze = 
-      Svg.g [] <| walls ++ borders ++ unvisited
+      Svg.g [] <| walls ++ borders ++ unvisited ++ current
   in
     div []
       [ div floatLeft [ h2 centerTitle [text "Maze Generator"]
