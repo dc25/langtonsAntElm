@@ -21,17 +21,15 @@ cols = 30
 type alias Box = Bool
 
 type alias Direction = Int
-up = 0
-down = 1
-left = 2
-right = 3
+down = 0
+right = 1
 
 type alias Door = (Matrix.Location, Direction)
 
 type alias Model =
   { boxes : Matrix.Matrix Box
   , doors : Set Door
-  , current : Matrix.Location
+  , current : List Matrix.Location
   , seed : Seed
   }
 
@@ -55,7 +53,7 @@ init =
       (c, s)= Random.generate locationGenerator (Random.initialSeed 45)
   in { boxes = Matrix.matrix rows cols (\location -> location == c ) 
      , doors = initdoors rows cols
-     , current = c
+     , current = [c]
      , seed = s
      }
 
@@ -110,7 +108,10 @@ view model =
                   |> Matrix.flatten 
                   |> concat
 
-    current = [circleInBox model.current "black"]
+    current = 
+      case head model.current of
+          Nothing -> []
+          Just c -> [circleInBox c "black"]
 
     maze = 
       Svg.g [] <| doors ++ borders ++ unvisited ++ current
@@ -144,24 +145,26 @@ unvisitedNeighbors model (row,col) =
 
 update : Action -> Model -> Model
 update action model = 
-  let neighbors = Debug.watch "neighbors" (unvisitedNeighbors model model.current)
-  in 
-    if (length neighbors) > 0 then
-      let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
-          previous = Debug.watch "previous" model.current
-          current = head (drop neighborIndex neighbors) |> withDefault (0,0) |> Debug.watch "current"
-          boxes = Matrix.set current True model.boxes 
-          direction = if fst previous == fst current then right else down
-          doorCell = Debug.watch "doorCell" <|
-            if (direction == down) then 
-              if (fst previous < fst current) then previous else current
-            else
-              if (snd previous < snd current) then previous else current
-            
-          doors = Set.remove (doorCell, direction) model.doors 
-      in {boxes=boxes, doors=doors, current=current, seed=seed}
-    else
-      model
+  case head model.current of
+    Nothing -> model
+    Just previous ->
+      let neighbors = unvisitedNeighbors model previous
+      in 
+        if (length neighbors) > 0 then
+          let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
+              current = head (drop neighborIndex neighbors) |> withDefault (0,0) |> Debug.watch "current"
+              boxes = Matrix.set current True model.boxes 
+              direction = if fst previous == fst current then right else down
+              doorCell = Debug.watch "doorCell" <|
+                if (direction == down) then 
+                  if (fst previous < fst current) then previous else current
+                else
+                  if (snd previous < snd current) then previous else current
+                
+              doors = Set.remove (doorCell, direction) model.doors 
+          in {boxes=boxes, doors=doors, current=current :: model.current, seed=seed}
+        else
+          model
 
 type Action = Tick 
 
