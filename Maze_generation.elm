@@ -9,7 +9,7 @@ import String exposing (join)
 import Html exposing (Html, br, input, h1, h2, text, div, button, fromElement)
 import Html.Attributes as HA
 import Svg 
-import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y2, fill,points, transform, style, width, height, preserveAspectRatio)
+import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y2, fill,points, style, width, height, preserveAspectRatio)
 
 w = 700
 h = 700
