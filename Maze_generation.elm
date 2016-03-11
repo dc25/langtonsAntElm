@@ -108,7 +108,7 @@ view address model =
   in
     div 
       []
-      [ h2 centerTitle [text "Maze Generator"]
+      [ h2 [centerTitle] [text "Maze Generator"]
       , div 
           [floatLeft] 
           [ button -- start/stop toggle button.
@@ -131,7 +131,7 @@ view address model =
       ] 
 
 floatLeft = HA.style [ ("float", "left") ] 
-centerTitle = [ HA.style [ ( "text-align", "center") ] ] 
+centerTitle = HA.style [ ( "text-align", "center") ] 
 
 unvisitedNeighbors : Model -> Matrix.Location -> List Matrix.Location
 unvisitedNeighbors model (row,col) = 
@@ -168,7 +168,6 @@ type Action = NoOp | Tick | ButtonPress
 tickSignal = (every (dt * second)) |> Signal.map (always Tick)
 
 modelSignal = Signal.foldp update init tickSignal
-
 
 control = Signal.mailbox NoOp
 
