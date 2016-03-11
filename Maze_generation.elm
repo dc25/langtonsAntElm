@@ -7,6 +7,7 @@ import Set exposing (..)
 import List exposing (..)
 import String exposing (join)
 import Html exposing (Html, br, input, h1, h2, text, div, button, fromElement)
+import Html.Events exposing (onClick)
 import Html.Attributes as HA
 import Svg 
 import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y2, fill,points, style, width, height, preserveAspectRatio)
@@ -52,7 +53,7 @@ init =
      , seed = s
      }
 
-view model =
+view address model =
   let
     greenLineStyle = style "stroke:green;stroke-width:0.3"
     redLineStyle = style "stroke:red;stroke-width:0.1" 
@@ -105,23 +106,31 @@ view model =
 
     maze = Svg.g [] <| doors ++ borders ++ unvisited ++ current
   in
-    div []
-      [ div floatLeft [ h2 centerTitle [text "Maze Generator"]
-                      , Svg.svg 
-                          [ version "1.1"
-                          , width (toString w)
-                          , height (toString h)
-                          , viewBox (join " " 
-                                       [ 0 |> toString
-                                       , 0 |> toString
-                                       , cols |> toString
-                                       , rows |> toString ])
-                          ] 
-                          [ maze ]
-                      ]
+    div 
+      []
+      [ h2 centerTitle [text "Maze Generator"]
+      , div 
+          [floatLeft] 
+          [ button -- start/stop toggle button.
+              [ onClick address ButtonPress ]
+              [ text "ButtonPress"] ]
+      , div 
+          [floatLeft] 
+          [ Svg.svg 
+              [ version "1.1"
+              , width (toString w)
+              , height (toString h)
+              , viewBox (join " " 
+                           [ 0 |> toString
+                           , 0 |> toString
+                           , cols |> toString
+                           , rows |> toString ])
+              ] 
+              [ maze ]
+          ]
       ] 
 
-floatLeft = [ HA.style [ ("float", "left") ] ]
+floatLeft = HA.style [ ("float", "left") ] 
 centerTitle = [ HA.style [ ( "text-align", "center") ] ] 
 
 unvisitedNeighbors : Model -> Matrix.Location -> List Matrix.Location
@@ -154,10 +163,13 @@ update' model current =
 update : Action -> Model -> Model
 update action model = update' model model.current 
 
-type Action = Tick 
+type Action = NoOp | Tick | ButtonPress
 
 tickSignal = (every (dt * second)) |> Signal.map (always Tick)
 
 modelSignal = Signal.foldp update init tickSignal
 
-main = Signal.map view modelSignal 
+
+control = Signal.mailbox NoOp
+
+main = Signal.map (view control.address) modelSignal 
