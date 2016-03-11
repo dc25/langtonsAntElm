@@ -32,17 +32,13 @@ type alias Model =
   , seed : Seed
   }
 
--- is there some better (maybe built in?) way of doing this?
-pairs : List a -> List b -> List (a,b)
-pairs la lb = List.concatMap (\at -> List.map ((,) at) lb) la
-
 initdoors : Int -> Int -> Set Door
 initdoors rows cols =
   let 
-    downAndRight = pairs (pairs [0..rows-2] [0..cols-2]) [down, right] 
-    onlyDown = pairs (pairs [0..rows-2] [cols-1]) [down] 
-    onlyRight = pairs (pairs [rows-1] [0..cols-2]) [right] 
-  in downAndRight ++ onlyDown ++ onlyRight |> fromList
+    pairs la lb = List.concatMap (\at -> List.map ((,) at) lb) la
+    downs = pairs (pairs [0..rows-2] [0..cols-1]) [down] 
+    rights = pairs (pairs [0..rows-1] [0..cols-2]) [right] 
+  in downs ++ rights |> fromList
 
 init : Model
 init = 
