@@ -1,5 +1,6 @@
 import Maybe exposing (withDefault)
 import Matrix 
+import Mouse
 import Random exposing (Seed)
 import Matrix.Random
 import Time exposing (every, second)
@@ -26,10 +27,14 @@ right = 1
 
 type alias Door = (Matrix.Location, Direction)
 
+type State = Initial | Generating | Generated | Solved
+
 type alias Model =
   { boxes : Matrix.Matrix Box
   , doors : Set Door
   , current : List Matrix.Location
+  , state : State
+  , seedStarter : Int
   , seed : Seed
   }
 
@@ -50,6 +55,8 @@ init =
   in { boxes = Matrix.matrix rows cols (\location -> location == c ) 
      , doors = initdoors rows cols
      , current = [c]
+     , state = Initial
+     , seedStarter = 0 -- updated every Tick until maze generated.
      , seed = s
      }
 
@@ -156,19 +163,33 @@ update' model current =
                  else
                    if (snd previous < snd nextBox) then previous else nextBox
                doors = Set.remove (doorCell, direction) model.doors 
-           in {boxes=boxes, doors=doors, current=nextBox :: model.current, seed=seed}
+           in {model | boxes=boxes, doors=doors, current=nextBox :: model.current, seed=seed}
          else
            tail current |> withDefault [] |> update' model
 
 update : Action -> Model -> Model
-update action model = update' model model.current 
-
-type Action = NoOp | Tick | ButtonPress
-
-tickSignal = (every (dt * second)) |> Signal.map (always Tick)
-
-modelSignal = Signal.foldp update init tickSignal
+update action model = 
+  case action of 
+    Tick t -> 
+      if (model.state == Initial) then { model | seedStarter = t } |> Debug.watch "unstarted model"
+      else update' model model.current 
+    ButtonPress -> 
+      let rowGenerator = Random.int 0 (rows-1) |> Debug.watch "rowGenerator"
+          colGenerator = Random.int 0 (cols-1)
+          locationGenerator = Random.pair rowGenerator colGenerator
+          (c, s)= Random.generate locationGenerator (Random.initialSeed model.seedStarter)
+      in {model | current = [c] , state = Generating , seed = s } |> Debug.watch "press model"
+    _ -> model |> Debug.watch "default model"
 
 control = Signal.mailbox NoOp
+
+type Action = NoOp | Tick Int | ButtonPress
+
+tickSignal = (every (dt * second)) |> Signal.map (\t -> Tick (round t)) 
+
+actionSignal = Signal.mergeMany [tickSignal, control.signal]
+
+
+modelSignal = Signal.foldp update init actionSignal
 
 main = Signal.map (view control.address) modelSignal 
