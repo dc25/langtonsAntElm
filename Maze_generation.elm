@@ -118,7 +118,7 @@ view address model =
     maze = 
       if model.animate || model.state == Generated || model.state == Initial 
       then [ Svg.g [] <| doors ++ borders ++ unvisited ++ current ] 
-      else []
+      else [ Svg.g [] <| borders ]
   in
     div 
       []
@@ -192,10 +192,10 @@ unvisitedNeighbors model (row,col) =
     |> List.filter (\l -> fst l >= 0 && snd l >= 0 && fst l < model.rows && snd l < model.cols)
     |> List.filter (\l -> (Matrix.get l model.boxes) |> M.withDefault False |> not)
 
-update' : Model -> Model
-update' model = 
+update' : Model -> Int -> Model
+update' model t = 
   case head model.current of
-    Nothing -> {model | state = Generated }
+    Nothing -> {model | state = Generated, seedStarter = t }
     Just prev ->
       let neighbors = unvisitedNeighbors model prev
       in if (length neighbors) > 0 then
@@ -206,35 +206,34 @@ update' model =
                doorCell = if (  (dir == down)   && (fst prev < fst next))  
                              || (dir == right ) && (snd prev < snd next) then prev else next
                doors = Set.remove (doorCell, dir) model.doors 
-           in {model | boxes=boxes, doors=doors, current=next :: model.current, seed=seed}
+           in {model | boxes=boxes, doors=doors, current=next :: model.current, seed=seed, seedStarter = t}
          else
            let tailCurrent = tail model.current |> M.withDefault [] 
-           in update' {model | current = tailCurrent }
+           in update' {model | current = tailCurrent} t
 
 update : Action -> Model -> Model
 update action model = 
-  case action of 
-    Tick t -> 
-      if (model.state == Generating) then update' model 
-      else { model | seedStarter = t } 
+  let stringToCellCount s =
+    let v' = toInt s |> R.withDefault 10
+    in if v' < 10 then 10 else v'
+  in case action of 
+       Tick t -> 
+         if (model.state == Generating) then update' model t
+         else { model | seedStarter = t } 
 
-    Generate -> 
-      init model.rows model.cols model.animate Generating model.seedStarter
+       Generate -> 
+         init model.rows model.cols model.animate Generating model.seedStarter
 
-    SetRows countString -> 
-      let v' = toInt countString |> R.withDefault 10
-          v = if v' < 10 then 10 else v'
-      in init v model.cols model.animate Initial model.seedStarter
+       SetRows countString -> 
+         init (stringToCellCount countString) model.cols model.animate Initial model.seedStarter
 
-    SetCols countString -> 
-      let v' = toInt countString |> R.withDefault 10
-          v = if v' < 10 then 10 else v'
-      in init model.rows v model.animate Initial model.seedStarter
+       SetCols countString -> 
+         init model.rows (stringToCellCount countString) model.animate Initial model.seedStarter
 
-    SetAnimate b -> 
-      init model.rows model.cols b Initial model.seedStarter
+       SetAnimate b -> 
+         { model | animate = b } 
 
-    NoOp -> model 
+       NoOp -> model 
 
 control = Signal.mailbox NoOp
 
@@ -244,6 +243,6 @@ tickSignal = (every (dt * second)) |> Signal.map (\t -> Tick (round t))
 
 actionSignal = Signal.mergeMany [tickSignal, control.signal]
 
-modelSignal = Signal.foldp update (init 10 10 False Initial 0) actionSignal
+modelSignal = Signal.foldp update (init 21 36 False Initial 0) actionSignal
 
 main = Signal.map (view control.address) modelSignal 
