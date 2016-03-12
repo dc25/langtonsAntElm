@@ -10,7 +10,7 @@ import Set exposing (..)
 import List exposing (..)
 import String exposing (join)
 import Html exposing (Html, br, input, h1, h2, text, div, button, fromElement)
-import Html.Events exposing (on, targetValue, onClick)
+import Html.Events exposing (on, targetValue, targetChecked, onClick)
 import Html.Attributes as HA
 import Svg 
 import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y2, fill,points, style, width, height, preserveAspectRatio)
@@ -47,15 +47,15 @@ initdoors rows cols =
     rights = pairs (pairs [0..rows-1] [0..cols-2]) [right] 
   in downs ++ rights |> fromList
 
-init : Int -> Int -> State -> Int -> Model
-init rows cols state starter = 
+init : Int -> Int -> Bool -> State -> Int -> Model
+init rows cols animate state starter = 
   let rowGenerator = Random.int 0 (rows-1)
       colGenerator = Random.int 0 (cols-1)
       locationGenerator = Random.pair rowGenerator colGenerator
       (c, s)= Random.generate locationGenerator (Random.initialSeed starter)
   in { rows = rows
      , cols = cols 
-     , animate = False
+     , animate = animate
      , boxes = Matrix.matrix rows cols (\location -> False)
      , doors = initdoors rows cols
      , current = if state == Generating then [c] else []
@@ -113,7 +113,7 @@ view address model =
     current = 
       case head model.current of
           Nothing -> []
-          Just c -> [circleInBox (c |> Debug.watch "current") "black"]
+          Just c -> [circleInBox c "black"]
 
     maze = 
       if model.animate || model.state == Generated || model.state == Initial 
@@ -125,8 +125,7 @@ view address model =
       [ h2 [centerTitle] [text "Maze Generator"]
       , div 
           [floatLeft] 
-          [ "rows=" ++ (model.rows |> toString) |> text
-          , input
+          [ input
               [ HA.placeholder "rows"
               , let showString = if model.rows >= 10 then model.rows |> toString else ""
                 in HA.value showString
@@ -138,8 +137,9 @@ view address model =
               , HA.max <| toString 40
               ]
               []
+          , "rows=" ++ (model.rows |> toString) |> text
           , br [] []
-          , "cols=" ++ (model.cols |> toString) |> text
+
           , input
               [ HA.placeholder "cols"
               , let showString = if model.cols >= 10 then model.cols |> toString else ""
@@ -152,6 +152,16 @@ view address model =
               , HA.max <| toString 40
               ]
               []
+          , "cols=" ++ (model.cols |> toString) |> text
+          , br [] []
+
+          , input
+              [ HA.type' "checkbox"
+              , HA.checked model.animate
+              , on "change" targetChecked (Signal.message address << SetAnimate)
+              ]
+              []
+          , text "Animate"
           , br [] []
           , button -- start/stop toggle button.
               [ onClick address Generate ]
@@ -182,9 +192,9 @@ unvisitedNeighbors model (row,col) =
     |> List.filter (\l -> fst l >= 0 && snd l >= 0 && fst l < model.rows && snd l < model.cols)
     |> List.filter (\l -> (Matrix.get l model.boxes) |> M.withDefault False |> not)
 
-update' : Model -> List Matrix.Location -> Model
-update' model current = 
-  case head current of
+update' : Model -> Model
+update' model = 
+  case head model.current of
     Nothing -> {model | state = Generated }
     Just previous ->
       let neighbors = unvisitedNeighbors model previous
@@ -201,38 +211,42 @@ update' model current =
                doors = Set.remove (doorCell, direction) model.doors 
            in {model | boxes=boxes, doors=doors, current=nextBox :: model.current, seed=seed}
          else
-           tail current |> M.withDefault [] |> update' model
+           let tailCurrent = tail model.current |> M.withDefault [] 
+           in update' {model | current = tailCurrent }
 
 update : Action -> Model -> Model
 update action model = 
   case action of 
     Tick t -> 
-      if (model.state == Generating) then update' model model.current 
+      if (model.state == Generating) then update' model 
       else { model | seedStarter = t } 
 
     Generate -> 
-      init model.rows model.cols Generating model.seedStarter
+      init model.rows model.cols model.animate Generating model.seedStarter
 
     SetRows countString -> 
       let v' = toInt countString |> R.withDefault 10
           v = if v' < 10 then 10 else v'
-      in init v model.cols Initial model.seedStarter
+      in init v model.cols model.animate Initial model.seedStarter
 
     SetCols countString -> 
       let v' = toInt countString |> R.withDefault 10
           v = if v' < 10 then 10 else v'
-      in init model.rows v Initial model.seedStarter
+      in init model.rows v model.animate Initial model.seedStarter
+
+    SetAnimate b -> 
+      init model.rows model.cols b Initial model.seedStarter
 
     NoOp -> model 
 
 control = Signal.mailbox NoOp
 
-type Action = NoOp | Tick Int | Generate | SetRows String | SetCols String
+type Action = NoOp | Tick Int | Generate | SetRows String | SetCols String | SetAnimate Bool
 
 tickSignal = (every (dt * second)) |> Signal.map (\t -> Tick (round t)) 
 
 actionSignal = Signal.mergeMany [tickSignal, control.signal]
 
-modelSignal = Signal.foldp update (init 10 10 Initial 0) actionSignal
+modelSignal = Signal.foldp update (init 10 10 False Initial 0) actionSignal
 
 main = Signal.map (view control.address) modelSignal 
