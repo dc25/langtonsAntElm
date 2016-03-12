@@ -56,7 +56,7 @@ init rows cols animate state starter =
   in { rows = rows
      , cols = cols 
      , animate = animate
-     , boxes = Matrix.matrix rows cols (\location -> False)
+     , boxes = Matrix.matrix rows cols (\location -> state == Generating && location == c)
      , doors = initdoors rows cols
      , current = if state == Generating then [c] else []
      , state = state
@@ -196,20 +196,17 @@ update' : Model -> Model
 update' model = 
   case head model.current of
     Nothing -> {model | state = Generated }
-    Just previous ->
-      let neighbors = unvisitedNeighbors model previous
+    Just prev ->
+      let neighbors = unvisitedNeighbors model prev
       in if (length neighbors) > 0 then
            let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
-               nextBox = head (drop neighborIndex neighbors) |> M.withDefault (0,0) 
-               boxes = Matrix.set nextBox True model.boxes 
-               direction = if fst previous == fst nextBox then right else down
-               doorCell = 
-                 if (direction == down) then 
-                   if (fst previous < fst nextBox) then previous else nextBox
-                 else
-                   if (snd previous < snd nextBox) then previous else nextBox
-               doors = Set.remove (doorCell, direction) model.doors 
-           in {model | boxes=boxes, doors=doors, current=nextBox :: model.current, seed=seed}
+               next = head (drop neighborIndex neighbors) |> M.withDefault (0,0) 
+               boxes = Matrix.set next True model.boxes 
+               dir = if fst prev == fst next then right else down
+               doorCell = if (  (dir == down)   && (fst prev < fst next))  
+                             || (dir == right ) && (snd prev < snd next) then prev else next
+               doors = Set.remove (doorCell, dir) model.doors 
+           in {model | boxes=boxes, doors=doors, current=next :: model.current, seed=seed}
          else
            let tailCurrent = tail model.current |> M.withDefault [] 
            in update' {model | current = tailCurrent }
