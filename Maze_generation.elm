@@ -1,4 +1,6 @@
-import Maybe exposing (withDefault)
+import Maybe as M
+import Result as R
+import String exposing (toInt)
 import Matrix 
 import Mouse
 import Random exposing (Seed)
@@ -8,18 +10,14 @@ import Set exposing (..)
 import List exposing (..)
 import String exposing (join)
 import Html exposing (Html, br, input, h1, h2, text, div, button, fromElement)
-import Html.Events exposing (onClick)
+import Html.Events exposing (on, targetValue, onClick)
 import Html.Attributes as HA
 import Svg 
 import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y2, fill,points, style, width, height, preserveAspectRatio)
 
 w = 700
 h = 700
-rows = 25
-cols = 25
 dt = 0.001
-
-type alias Box = Bool
 
 type alias Direction = Int
 down = 0
@@ -30,7 +28,9 @@ type alias Door = (Matrix.Location, Direction)
 type State = Initial | Generating | Generated | Solved
 
 type alias Model =
-  { boxes : Matrix.Matrix Box
+  { rows : Int
+  , cols : Int
+  , boxes : Matrix.Matrix Bool
   , doors : Set Door
   , current : List Matrix.Location
   , state : State
@@ -46,17 +46,19 @@ initdoors rows cols =
     rights = pairs (pairs [0..rows-1] [0..cols-2]) [right] 
   in downs ++ rights |> fromList
 
-init : Model
-init = 
+init : Int -> Int -> State -> Int -> Model
+init rows cols state starter = 
   let rowGenerator = Random.int 0 (rows-1)
       colGenerator = Random.int 0 (cols-1)
       locationGenerator = Random.pair rowGenerator colGenerator
-      (c, s)= Random.generate locationGenerator (Random.initialSeed 45)
-  in { boxes = Matrix.matrix rows cols (\location -> location == c ) 
+      (c, s)= Random.generate locationGenerator (Random.initialSeed starter)
+  in { rows = rows
+     , cols = cols 
+     , boxes = Matrix.matrix rows cols (\location -> False)
      , doors = initdoors rows cols
      , current = [c]
-     , state = Initial
-     , seedStarter = 0 -- updated every Tick until maze generated.
+     , state = state
+     , seedStarter = starter -- updated every Tick until maze generated.
      , seed = s
      }
 
@@ -67,12 +69,12 @@ view address model =
 
     x1Min = x1 <| toString 0
     y1Min = y1 <| toString 0
-    x1Max = x1 <| toString cols
-    y1Max = y1 <| toString rows
+    x1Max = x1 <| toString model.cols
+    y1Max = y1 <| toString model.rows
     x2Min = x2 <| toString 0
     y2Min = y2 <| toString 0
-    x2Max = x2 <| toString cols
-    y2Max = y2 <| toString rows
+    x2Max = x2 <| toString model.cols
+    y2Max = y2 <| toString model.rows
 
     borders = [ Svg.line [ x1Min, y1Min, x2Max, y2Min, greenLineStyle ] []
               , Svg.line [ x1Max, y1Min, x2Max, y2Max, greenLineStyle ] []
@@ -111,16 +113,43 @@ view address model =
           Nothing -> []
           Just c -> [circleInBox c "black"]
 
-    maze = Svg.g [] <| doors ++ borders ++ unvisited ++ current
+    maze = 
+      if model.state == Initial then []
+      else  [ Svg.g [] <| doors ++ borders ++ unvisited ++ current ]
   in
     div 
       []
       [ h2 [centerTitle] [text "Maze Generator"]
+
+      , input
+          [ HA.placeholder "rows"
+          , let showString = if model.rows >= 10 then model.rows |> toString else ""
+            in HA.value showString
+          , on "input" targetValue (Signal.message address << SetRows)
+          , HA.disabled False
+          , HA.style [ ("height", "20px") ]
+          , HA.type' "number"
+          , HA.min <| toString 10
+          ]
+          []
+
+      , input
+          [ HA.placeholder "cols"
+          , let showString = if model.cols >= 10 then model.cols |> toString else ""
+            in HA.value showString
+          , on "input" targetValue (Signal.message address << SetCols)
+          , HA.disabled False
+          , HA.style [ ("height", "20px") ]
+          , HA.type' "number"
+          , HA.min <| toString 10
+          ]
+          []
+
       , div 
           [floatLeft] 
           [ button -- start/stop toggle button.
-              [ onClick address ButtonPress ]
-              [ text "ButtonPress"] ]
+              [ onClick address Generate ]
+              [ text "Generate"] ]
       , div 
           [floatLeft] 
           [ Svg.svg 
@@ -130,10 +159,10 @@ view address model =
               , viewBox (join " " 
                            [ 0 |> toString
                            , 0 |> toString
-                           , cols |> toString
-                           , rows |> toString ])
+                           , model.cols |> toString
+                           , model.rows |> toString ])
               ] 
-              [ maze ]
+              maze
           ]
       ] 
 
@@ -143,8 +172,8 @@ centerTitle = HA.style [ ( "text-align", "center") ]
 unvisitedNeighbors : Model -> Matrix.Location -> List Matrix.Location
 unvisitedNeighbors model (row,col) = 
   [(row, col-1), (row-1, col), (row, col+1), (row+1, col)]
-    |> List.filter (\l -> fst l >= 0 && snd l >= 0 && fst l < rows && snd l < cols)
-    |> List.filter (\l -> (Matrix.get l model.boxes) |> withDefault False |> not)
+    |> List.filter (\l -> fst l >= 0 && snd l >= 0 && fst l < model.rows && snd l < model.cols)
+    |> List.filter (\l -> (Matrix.get l model.boxes) |> M.withDefault False |> not)
 
 update' : Model -> List Matrix.Location -> Model
 update' model current = 
@@ -154,7 +183,7 @@ update' model current =
       let neighbors = unvisitedNeighbors model previous
       in if (length neighbors) > 0 then
            let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
-               nextBox = head (drop neighborIndex neighbors) |> withDefault (0,0) 
+               nextBox = head (drop neighborIndex neighbors) |> M.withDefault (0,0) 
                boxes = Matrix.set nextBox True model.boxes 
                direction = if fst previous == fst nextBox then right else down
                doorCell = 
@@ -165,31 +194,38 @@ update' model current =
                doors = Set.remove (doorCell, direction) model.doors 
            in {model | boxes=boxes, doors=doors, current=nextBox :: model.current, seed=seed}
          else
-           tail current |> withDefault [] |> update' model
+           tail current |> M.withDefault [] |> update' model
 
 update : Action -> Model -> Model
 update action model = 
   case action of 
     Tick t -> 
-      if (model.state == Initial) then { model | seedStarter = t } |> Debug.watch "unstarted model"
+      if (model.state == Initial) then { model | seedStarter = t } 
       else update' model model.current 
-    ButtonPress -> 
-      let rowGenerator = Random.int 0 (rows-1) |> Debug.watch "rowGenerator"
-          colGenerator = Random.int 0 (cols-1)
-          locationGenerator = Random.pair rowGenerator colGenerator
-          (c, s)= Random.generate locationGenerator (Random.initialSeed model.seedStarter)
-      in {model | current = [c] , state = Generating , seed = s } |> Debug.watch "press model"
-    _ -> model |> Debug.watch "default model"
+
+    Generate -> 
+      init model.rows model.cols Generating model.seedStarter
+
+    SetRows countString -> 
+      let v' = toInt countString |> R.withDefault 10
+          v = if v' < 10 then 10 else v'
+      in { model | rows = v }
+
+    SetCols countString -> 
+      let v' = toInt countString |> R.withDefault 10
+          v = if v' < 10 then 10 else v'
+      in { model | cols = v }
+
+    NoOp -> model 
 
 control = Signal.mailbox NoOp
 
-type Action = NoOp | Tick Int | ButtonPress
+type Action = NoOp | Tick Int | Generate | SetRows String | SetCols String
 
 tickSignal = (every (dt * second)) |> Signal.map (\t -> Tick (round t)) 
 
 actionSignal = Signal.mergeMany [tickSignal, control.signal]
 
-
-modelSignal = Signal.foldp update init actionSignal
+modelSignal = Signal.foldp update (init 10 10 Initial 0) actionSignal
 
 main = Signal.map (view control.address) modelSignal 
