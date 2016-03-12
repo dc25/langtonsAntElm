@@ -8626,6 +8626,61 @@ Elm.Matrix.Random.make = function (_elm) {
       });
    });
    return _elm.Matrix.Random.values = {_op: _op,matrix: matrix,matrixUsing: matrixUsing};
+};Elm.Native = Elm.Native || {};
+Elm.Native.Mouse = {};
+Elm.Native.Mouse.make = function(localRuntime) {
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Mouse = localRuntime.Native.Mouse || {};
+	if (localRuntime.Native.Mouse.values)
+	{
+		return localRuntime.Native.Mouse.values;
+	}
+
+	var NS = Elm.Native.Signal.make(localRuntime);
+	var Utils = Elm.Native.Utils.make(localRuntime);
+
+	var position = NS.input('Mouse.position', Utils.Tuple2(0, 0));
+
+	var isDown = NS.input('Mouse.isDown', false);
+
+	var clicks = NS.input('Mouse.clicks', Utils.Tuple0);
+
+	var node = localRuntime.isFullscreen()
+		? document
+		: localRuntime.node;
+
+	localRuntime.addListener([clicks.id], node, 'click', function click() {
+		localRuntime.notify(clicks.id, Utils.Tuple0);
+	});
+	localRuntime.addListener([isDown.id], node, 'mousedown', function down() {
+		localRuntime.notify(isDown.id, true);
+	});
+	localRuntime.addListener([isDown.id], node, 'mouseup', function up() {
+		localRuntime.notify(isDown.id, false);
+	});
+	localRuntime.addListener([position.id], node, 'mousemove', function move(e) {
+		localRuntime.notify(position.id, Utils.getXY(e));
+	});
+
+	return localRuntime.Native.Mouse.values = {
+		position: position,
+		isDown: isDown,
+		clicks: clicks
+	};
+};
+Elm.Mouse = Elm.Mouse || {};
+Elm.Mouse.make = function (_elm) {
+   "use strict";
+   _elm.Mouse = _elm.Mouse || {};
+   if (_elm.Mouse.values) return _elm.Mouse.values;
+   var _U = Elm.Native.Utils.make(_elm),$Basics = Elm.Basics.make(_elm),$Native$Mouse = Elm.Native.Mouse.make(_elm),$Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var clicks = $Native$Mouse.clicks;
+   var isDown = $Native$Mouse.isDown;
+   var position = $Native$Mouse.position;
+   var x = A2($Signal.map,$Basics.fst,position);
+   var y = A2($Signal.map,$Basics.snd,position);
+   return _elm.Mouse.values = {_op: _op,position: position,x: x,y: y,isDown: isDown,clicks: clicks};
 };(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
@@ -10713,6 +10768,71 @@ Elm.Html.Attributes.make = function (_elm) {
                                         ,manifest: manifest
                                         ,property: property
                                         ,attribute: attribute};
+};Elm.Html = Elm.Html || {};
+Elm.Html.Events = Elm.Html.Events || {};
+Elm.Html.Events.make = function (_elm) {
+   "use strict";
+   _elm.Html = _elm.Html || {};
+   _elm.Html.Events = _elm.Html.Events || {};
+   if (_elm.Html.Events.values) return _elm.Html.Events.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Json$Decode = Elm.Json.Decode.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $VirtualDom = Elm.VirtualDom.make(_elm);
+   var _op = {};
+   var keyCode = A2($Json$Decode._op[":="],"keyCode",$Json$Decode.$int);
+   var targetChecked = A2($Json$Decode.at,_U.list(["target","checked"]),$Json$Decode.bool);
+   var targetValue = A2($Json$Decode.at,_U.list(["target","value"]),$Json$Decode.string);
+   var defaultOptions = $VirtualDom.defaultOptions;
+   var Options = F2(function (a,b) {    return {stopPropagation: a,preventDefault: b};});
+   var onWithOptions = $VirtualDom.onWithOptions;
+   var on = $VirtualDom.on;
+   var messageOn = F3(function (name,addr,msg) {    return A3(on,name,$Json$Decode.value,function (_p0) {    return A2($Signal.message,addr,msg);});});
+   var onClick = messageOn("click");
+   var onDoubleClick = messageOn("dblclick");
+   var onMouseMove = messageOn("mousemove");
+   var onMouseDown = messageOn("mousedown");
+   var onMouseUp = messageOn("mouseup");
+   var onMouseEnter = messageOn("mouseenter");
+   var onMouseLeave = messageOn("mouseleave");
+   var onMouseOver = messageOn("mouseover");
+   var onMouseOut = messageOn("mouseout");
+   var onBlur = messageOn("blur");
+   var onFocus = messageOn("focus");
+   var onSubmit = messageOn("submit");
+   var onKey = F3(function (name,addr,handler) {    return A3(on,name,keyCode,function (code) {    return A2($Signal.message,addr,handler(code));});});
+   var onKeyUp = onKey("keyup");
+   var onKeyDown = onKey("keydown");
+   var onKeyPress = onKey("keypress");
+   return _elm.Html.Events.values = {_op: _op
+                                    ,onBlur: onBlur
+                                    ,onFocus: onFocus
+                                    ,onSubmit: onSubmit
+                                    ,onKeyUp: onKeyUp
+                                    ,onKeyDown: onKeyDown
+                                    ,onKeyPress: onKeyPress
+                                    ,onClick: onClick
+                                    ,onDoubleClick: onDoubleClick
+                                    ,onMouseMove: onMouseMove
+                                    ,onMouseDown: onMouseDown
+                                    ,onMouseUp: onMouseUp
+                                    ,onMouseEnter: onMouseEnter
+                                    ,onMouseLeave: onMouseLeave
+                                    ,onMouseOver: onMouseOver
+                                    ,onMouseOut: onMouseOut
+                                    ,on: on
+                                    ,onWithOptions: onWithOptions
+                                    ,defaultOptions: defaultOptions
+                                    ,targetValue: targetValue
+                                    ,targetChecked: targetChecked
+                                    ,keyCode: keyCode
+                                    ,Options: Options};
 };Elm.Svg = Elm.Svg || {};
 Elm.Svg.make = function (_elm) {
    "use strict";
@@ -11429,6 +11549,7 @@ Elm.Main.make = function (_elm) {
    $Debug = Elm.Debug.make(_elm),
    $Html = Elm.Html.make(_elm),
    $Html$Attributes = Elm.Html.Attributes.make(_elm),
+   $Html$Events = Elm.Html.Events.make(_elm),
    $List = Elm.List.make(_elm),
    $Matrix = Elm.Matrix.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
@@ -11441,59 +11562,70 @@ Elm.Main.make = function (_elm) {
    $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
    $Time = Elm.Time.make(_elm);
    var _op = {};
-   var Tick = {ctor: "Tick"};
-   var centerTitle = _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "text-align",_1: "center"}]))]);
-   var floatLeft = _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "float",_1: "left"}]))]);
-   var pairs = F2(function (la,lb) {
-      return A2($List.concatMap,function (at) {    return A2($List.map,F2(function (v0,v1) {    return {ctor: "_Tuple2",_0: v0,_1: v1};})(at),lb);},la);
-   });
-   var Model = F4(function (a,b,c,d) {    return {boxes: a,doors: b,current: c,seed: d};});
-   var right = 1;
-   var down = 0;
-   var initdoors = F2(function (rows,cols) {
-      var onlyRight = A2(pairs,A2(pairs,_U.list([rows - 1]),_U.range(0,cols - 2)),_U.list([right]));
-      var onlyDown = A2(pairs,A2(pairs,_U.range(0,rows - 2),_U.list([cols - 1])),_U.list([down]));
-      var downAndRight = A2(pairs,A2(pairs,_U.range(0,rows - 2),_U.range(0,cols - 2)),_U.list([down,right]));
-      return $Set.fromList(A2($Basics._op["++"],downAndRight,A2($Basics._op["++"],onlyDown,onlyRight)));
-   });
-   var dt = 1.0e-3;
-   var tickSignal = A2($Signal.map,$Basics.always(Tick),$Time.every(dt * $Time.second));
-   var cols = 25;
-   var rows = 25;
-   var init = function () {
-      var colGenerator = A2($Random.$int,0,cols - 1);
-      var rowGenerator = A2($Random.$int,0,rows - 1);
-      var locationGenerator = A2($Random.pair,rowGenerator,colGenerator);
-      var _p0 = A2($Random.generate,locationGenerator,$Random.initialSeed(45));
-      var c = _p0._0;
-      var s = _p0._1;
-      return {boxes: A3($Matrix.matrix,rows,cols,function (location) {    return _U.eq(location,c);})
-             ,doors: A2(initdoors,rows,cols)
-             ,current: _U.list([c])
-             ,seed: s};
-   }();
-   var unvisitedNeighbors = F2(function (model,_p1) {
-      var _p2 = _p1;
-      var _p4 = _p2._0;
-      var _p3 = _p2._1;
+   var SetAnimate = function (a) {    return {ctor: "SetAnimate",_0: a};};
+   var SetCols = function (a) {    return {ctor: "SetCols",_0: a};};
+   var SetRows = function (a) {    return {ctor: "SetRows",_0: a};};
+   var Generate = {ctor: "Generate"};
+   var Tick = function (a) {    return {ctor: "Tick",_0: a};};
+   var NoOp = {ctor: "NoOp"};
+   var control = $Signal.mailbox(NoOp);
+   var unvisitedNeighbors = F2(function (model,_p0) {
+      var _p1 = _p0;
+      var _p3 = _p1._0;
+      var _p2 = _p1._1;
       return A2($List.filter,
       function (l) {
          return $Basics.not(A2($Maybe.withDefault,false,A2($Matrix.get,l,model.boxes)));
       },
       A2($List.filter,
       function (l) {
-         return _U.cmp($Basics.fst(l),0) > -1 && (_U.cmp($Basics.snd(l),0) > -1 && (_U.cmp($Basics.fst(l),rows) < 0 && _U.cmp($Basics.snd(l),cols) < 0));
+         return _U.cmp($Basics.fst(l),0) > -1 && (_U.cmp($Basics.snd(l),0) > -1 && (_U.cmp($Basics.fst(l),model.rows) < 0 && _U.cmp($Basics.snd(l),
+         model.cols) < 0));
       },
-      _U.list([{ctor: "_Tuple2",_0: _p4,_1: _p3 - 1}
-              ,{ctor: "_Tuple2",_0: _p4 - 1,_1: _p3}
-              ,{ctor: "_Tuple2",_0: _p4,_1: _p3 + 1}
-              ,{ctor: "_Tuple2",_0: _p4 + 1,_1: _p3}])));
+      _U.list([{ctor: "_Tuple2",_0: _p3,_1: _p2 - 1}
+              ,{ctor: "_Tuple2",_0: _p3 - 1,_1: _p2}
+              ,{ctor: "_Tuple2",_0: _p3,_1: _p2 + 1}
+              ,{ctor: "_Tuple2",_0: _p3 + 1,_1: _p2}])));
    });
-   var update$ = F2(function (model,current) {
+   var centerTitle = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "text-align",_1: "center"}]));
+   var floatLeft = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "float",_1: "left"}]));
+   var Model = F9(function (a,b,c,d,e,f,g,h,i) {    return {rows: a,cols: b,animate: c,boxes: d,doors: e,current: f,state: g,seedStarter: h,seed: i};});
+   var Solved = {ctor: "Solved"};
+   var Generated = {ctor: "Generated"};
+   var Generating = {ctor: "Generating"};
+   var Initial = {ctor: "Initial"};
+   var right = 1;
+   var down = 0;
+   var initdoors = F2(function (rows,cols) {
+      var pairs = F2(function (la,lb) {
+         return A2($List.concatMap,function (at) {    return A2($List.map,F2(function (v0,v1) {    return {ctor: "_Tuple2",_0: v0,_1: v1};})(at),lb);},la);
+      });
+      var downs = A2(pairs,A2(pairs,_U.range(0,rows - 2),_U.range(0,cols - 1)),_U.list([down]));
+      var rights = A2(pairs,A2(pairs,_U.range(0,rows - 1),_U.range(0,cols - 2)),_U.list([right]));
+      return $Set.fromList(A2($Basics._op["++"],downs,rights));
+   });
+   var init = F5(function (rows,cols,animate,state,starter) {
+      var colGenerator = A2($Random.$int,0,cols - 1);
+      var rowGenerator = A2($Random.$int,0,rows - 1);
+      var locationGenerator = A2($Random.pair,rowGenerator,colGenerator);
+      var _p4 = A2($Random.generate,locationGenerator,$Random.initialSeed(starter));
+      var c = _p4._0;
+      var s = _p4._1;
+      return {rows: rows
+             ,cols: cols
+             ,animate: animate
+             ,boxes: A3($Matrix.matrix,rows,cols,function (location) {    return false;})
+             ,doors: A2(initdoors,rows,cols)
+             ,current: _U.eq(state,Generating) ? _U.list([c]) : _U.list([])
+             ,state: state
+             ,seedStarter: starter
+             ,seed: s};
+   });
+   var update$ = function (model) {
       update$: while (true) {
-         var _p5 = $List.head(current);
+         var _p5 = $List.head(model.current);
          if (_p5.ctor === "Nothing") {
-               return model;
+               return _U.update(model,{state: Generated});
             } else {
                var _p7 = _p5._0;
                var neighbors = A2(unvisitedNeighbors,model,_p7);
@@ -11507,56 +11639,72 @@ Elm.Main.make = function (_elm) {
                      var doorCell = _U.eq(direction,down) ? _U.cmp($Basics.fst(_p7),$Basics.fst(nextBox)) < 0 ? _p7 : nextBox : _U.cmp($Basics.snd(_p7),
                      $Basics.snd(nextBox)) < 0 ? _p7 : nextBox;
                      var doors = A2($Set.remove,{ctor: "_Tuple2",_0: doorCell,_1: direction},model.doors);
-                     return {boxes: boxes,doors: doors,current: A2($List._op["::"],nextBox,model.current),seed: seed};
+                     return _U.update(model,{boxes: boxes,doors: doors,current: A2($List._op["::"],nextBox,model.current),seed: seed});
                   } else {
-                     var _v2 = model,_v3 = A2($Maybe.withDefault,_U.list([]),$List.tail(current));
+                     var tailCurrent = A2($Maybe.withDefault,_U.list([]),$List.tail(model.current));
+                     var _v2 = _U.update(model,{current: tailCurrent});
                      model = _v2;
-                     current = _v3;
                      continue update$;
                   }
             }
       }
+   };
+   var update = F2(function (action,model) {
+      var _p8 = action;
+      switch (_p8.ctor)
+      {case "Tick": return _U.eq(model.state,Generating) ? update$(model) : _U.update(model,{seedStarter: _p8._0});
+         case "Generate": return A5(init,model.rows,model.cols,model.animate,Generating,model.seedStarter);
+         case "SetRows": var v$ = A2($Result.withDefault,10,$String.toInt(_p8._0));
+           var v = _U.cmp(v$,10) < 0 ? 10 : v$;
+           return A5(init,v,model.cols,model.animate,Initial,model.seedStarter);
+         case "SetCols": var v$ = A2($Result.withDefault,10,$String.toInt(_p8._0));
+           var v = _U.cmp(v$,10) < 0 ? 10 : v$;
+           return A5(init,model.rows,v,model.animate,Initial,model.seedStarter);
+         case "SetAnimate": return A5(init,model.rows,model.cols,_p8._0,Initial,model.seedStarter);
+         default: return model;}
    });
-   var update = F2(function (action,model) {    return A2(update$,model,model.current);});
-   var modelSignal = A3($Signal.foldp,update,init,tickSignal);
+   var dt = 1.0e-3;
+   var tickSignal = A2($Signal.map,function (t) {    return Tick($Basics.round(t));},$Time.every(dt * $Time.second));
+   var actionSignal = $Signal.mergeMany(_U.list([tickSignal,control.signal]));
+   var modelSignal = A3($Signal.foldp,update,A5(init,10,10,false,Initial,0),actionSignal);
    var h = 700;
    var w = 700;
-   var view = function (model) {
-      var circleInBox = F2(function (_p8,color) {
-         var _p9 = _p8;
+   var view = F2(function (address,model) {
+      var circleInBox = F2(function (_p9,color) {
+         var _p10 = _p9;
          return A2($Svg.circle,
          _U.list([$Svg$Attributes.r("0.25")
                  ,$Svg$Attributes.fill(color)
-                 ,$Svg$Attributes.cx($Basics.toString($Basics.toFloat(_p9._1) + 0.5))
-                 ,$Svg$Attributes.cy($Basics.toString($Basics.toFloat(_p9._0) + 0.5))]),
+                 ,$Svg$Attributes.cx($Basics.toString($Basics.toFloat(_p10._1) + 0.5))
+                 ,$Svg$Attributes.cy($Basics.toString($Basics.toFloat(_p10._0) + 0.5))]),
          _U.list([]));
       });
       var showUnvisited = F2(function (location,box) {    return box ? _U.list([]) : _U.list([A2(circleInBox,location,"yellow")]);});
       var unvisited = $List.concat($Matrix.flatten(A2($Matrix.mapWithLocation,showUnvisited,model.boxes)));
       var current = function () {
-         var _p10 = $List.head(model.current);
-         if (_p10.ctor === "Nothing") {
+         var _p11 = $List.head(model.current);
+         if (_p11.ctor === "Nothing") {
                return _U.list([]);
             } else {
-               return _U.list([A2(circleInBox,_p10._0,"black")]);
+               return _U.list([A2(circleInBox,_p11._0,"black")]);
             }
       }();
-      var y2Max = $Svg$Attributes.y2($Basics.toString(rows));
-      var x2Max = $Svg$Attributes.x2($Basics.toString(cols));
+      var y2Max = $Svg$Attributes.y2($Basics.toString(model.rows));
+      var x2Max = $Svg$Attributes.x2($Basics.toString(model.cols));
       var y2Min = $Svg$Attributes.y2($Basics.toString(0));
       var x2Min = $Svg$Attributes.x2($Basics.toString(0));
-      var y1Max = $Svg$Attributes.y1($Basics.toString(rows));
-      var x1Max = $Svg$Attributes.x1($Basics.toString(cols));
+      var y1Max = $Svg$Attributes.y1($Basics.toString(model.rows));
+      var x1Max = $Svg$Attributes.x1($Basics.toString(model.cols));
       var y1Min = $Svg$Attributes.y1($Basics.toString(0));
       var x1Min = $Svg$Attributes.x1($Basics.toString(0));
       var redLineStyle = $Svg$Attributes.style("stroke:red;stroke-width:0.1");
       var doorToLine = function (door) {
-         var _p11 = $Basics.fst(door);
-         var row = _p11._0;
-         var column = _p11._1;
-         var _p12 = _U.eq($Basics.snd(door),right) ? {ctor: "_Tuple2",_0: 1,_1: 0} : {ctor: "_Tuple2",_0: 0,_1: 1};
-         var deltaX1 = _p12._0;
-         var deltaY1 = _p12._1;
+         var _p12 = $Basics.fst(door);
+         var row = _p12._0;
+         var column = _p12._1;
+         var _p13 = _U.eq($Basics.snd(door),right) ? {ctor: "_Tuple2",_0: 1,_1: 0} : {ctor: "_Tuple2",_0: 0,_1: 1};
+         var deltaX1 = _p13._0;
+         var deltaY1 = _p13._1;
          return A2($Svg.line,
          _U.list([$Svg$Attributes.x1($Basics.toString(column + deltaX1))
                  ,$Svg$Attributes.y1($Basics.toString(row + deltaY1))
@@ -11571,32 +11719,80 @@ Elm.Main.make = function (_elm) {
                             ,A2($Svg.line,_U.list([x1Max,y1Min,x2Max,y2Max,greenLineStyle]),_U.list([]))
                             ,A2($Svg.line,_U.list([x1Max,y1Max,x2Min,y2Max,greenLineStyle]),_U.list([]))
                             ,A2($Svg.line,_U.list([x1Min,y1Max,x2Min,y2Min,greenLineStyle]),_U.list([]))]);
-      var maze = A2($Svg.g,_U.list([]),A2($Basics._op["++"],doors,A2($Basics._op["++"],borders,A2($Basics._op["++"],unvisited,current))));
+      var maze = model.animate || (_U.eq(model.state,Generated) || _U.eq(model.state,Initial)) ? _U.list([A2($Svg.g,
+      _U.list([]),
+      A2($Basics._op["++"],doors,A2($Basics._op["++"],borders,A2($Basics._op["++"],unvisited,current))))]) : _U.list([]);
       return A2($Html.div,
       _U.list([]),
-      _U.list([A2($Html.div,
-      floatLeft,
-      _U.list([A2($Html.h2,centerTitle,_U.list([$Html.text("Maze Generator")]))
-              ,A2($Svg.svg,
+      _U.list([A2($Html.h2,_U.list([centerTitle]),_U.list([$Html.text("Maze Generator")]))
+              ,A2($Html.div,
+              _U.list([floatLeft]),
+              _U.list([A2($Html.input,
+                      _U.list([$Html$Attributes.placeholder("rows")
+                              ,function () {
+                                 var showString = _U.cmp(model.rows,10) > -1 ? $Basics.toString(model.rows) : "";
+                                 return $Html$Attributes.value(showString);
+                              }()
+                              ,A3($Html$Events.on,"input",$Html$Events.targetValue,function (_p14) {    return A2($Signal.message,address,SetRows(_p14));})
+                              ,$Html$Attributes.disabled(false)
+                              ,$Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "height",_1: "20px"}]))
+                              ,$Html$Attributes.type$("range")
+                              ,$Html$Attributes.min($Basics.toString(10))
+                              ,$Html$Attributes.max($Basics.toString(40))]),
+                      _U.list([]))
+                      ,$Html.text(A2($Basics._op["++"],"rows=",$Basics.toString(model.rows)))
+                      ,A2($Html.br,_U.list([]),_U.list([]))
+                      ,A2($Html.input,
+                      _U.list([$Html$Attributes.placeholder("cols")
+                              ,function () {
+                                 var showString = _U.cmp(model.cols,10) > -1 ? $Basics.toString(model.cols) : "";
+                                 return $Html$Attributes.value(showString);
+                              }()
+                              ,A3($Html$Events.on,"input",$Html$Events.targetValue,function (_p15) {    return A2($Signal.message,address,SetCols(_p15));})
+                              ,$Html$Attributes.disabled(false)
+                              ,$Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "height",_1: "20px"}]))
+                              ,$Html$Attributes.type$("range")
+                              ,$Html$Attributes.min($Basics.toString(10))
+                              ,$Html$Attributes.max($Basics.toString(40))]),
+                      _U.list([]))
+                      ,$Html.text(A2($Basics._op["++"],"cols=",$Basics.toString(model.cols)))
+                      ,A2($Html.br,_U.list([]),_U.list([]))
+                      ,A2($Html.input,
+                      _U.list([$Html$Attributes.type$("checkbox")
+                              ,$Html$Attributes.checked(model.animate)
+                              ,A3($Html$Events.on,
+                              "change",
+                              $Html$Events.targetChecked,
+                              function (_p16) {
+                                 return A2($Signal.message,address,SetAnimate(_p16));
+                              })]),
+                      _U.list([]))
+                      ,$Html.text("Animate")
+                      ,A2($Html.br,_U.list([]),_U.list([]))
+                      ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Generate)]),_U.list([$Html.text("Generate")]))]))
+              ,A2($Html.div,
+              _U.list([floatLeft]),
+              _U.list([A2($Svg.svg,
               _U.list([$Svg$Attributes.version("1.1")
                       ,$Svg$Attributes.width($Basics.toString(w))
                       ,$Svg$Attributes.height($Basics.toString(h))
                       ,$Svg$Attributes.viewBox(A2($String.join,
                       " ",
-                      _U.list([$Basics.toString(0),$Basics.toString(0),$Basics.toString(cols),$Basics.toString(rows)])))]),
-              _U.list([maze]))]))]));
-   };
-   var main = A2($Signal.map,view,modelSignal);
+                      _U.list([$Basics.toString(0),$Basics.toString(0),$Basics.toString(model.cols),$Basics.toString(model.rows)])))]),
+              maze)]))]));
+   });
+   var main = A2($Signal.map,view(control.address),modelSignal);
    return _elm.Main.values = {_op: _op
                              ,w: w
                              ,h: h
-                             ,rows: rows
-                             ,cols: cols
                              ,dt: dt
                              ,down: down
                              ,right: right
+                             ,Initial: Initial
+                             ,Generating: Generating
+                             ,Generated: Generated
+                             ,Solved: Solved
                              ,Model: Model
-                             ,pairs: pairs
                              ,initdoors: initdoors
                              ,init: init
                              ,view: view
@@ -11605,8 +11801,15 @@ Elm.Main.make = function (_elm) {
                              ,unvisitedNeighbors: unvisitedNeighbors
                              ,update$: update$
                              ,update: update
+                             ,control: control
+                             ,NoOp: NoOp
                              ,Tick: Tick
+                             ,Generate: Generate
+                             ,SetRows: SetRows
+                             ,SetCols: SetCols
+                             ,SetAnimate: SetAnimate
                              ,tickSignal: tickSignal
+                             ,actionSignal: actionSignal
                              ,modelSignal: modelSignal
                              ,main: main};
 };</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Main)</script></body></html>
