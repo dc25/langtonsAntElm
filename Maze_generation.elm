@@ -30,6 +30,7 @@ type State = Initial | Generating | Generated | Solved
 type alias Model =
   { rows : Int
   , cols : Int
+  , animate : Bool
   , boxes : Matrix.Matrix Bool
   , doors : Set Door
   , current : List Matrix.Location
@@ -54,9 +55,10 @@ init rows cols state starter =
       (c, s)= Random.generate locationGenerator (Random.initialSeed starter)
   in { rows = rows
      , cols = cols 
+     , animate = False
      , boxes = Matrix.matrix rows cols (\location -> False)
      , doors = initdoors rows cols
-     , current = [c]
+     , current = if state == Generating then [c] else []
      , state = state
      , seedStarter = starter -- updated every Tick until maze generated.
      , seed = s
@@ -111,45 +113,50 @@ view address model =
     current = 
       case head model.current of
           Nothing -> []
-          Just c -> [circleInBox c "black"]
+          Just c -> [circleInBox (c |> Debug.watch "current") "black"]
 
     maze = 
-      if model.state == Initial then []
-      else  [ Svg.g [] <| doors ++ borders ++ unvisited ++ current ]
+      if model.animate || model.state == Generated || model.state == Initial 
+      then [ Svg.g [] <| doors ++ borders ++ unvisited ++ current ] 
+      else []
   in
     div 
       []
       [ h2 [centerTitle] [text "Maze Generator"]
-
-      , input
-          [ HA.placeholder "rows"
-          , let showString = if model.rows >= 10 then model.rows |> toString else ""
-            in HA.value showString
-          , on "input" targetValue (Signal.message address << SetRows)
-          , HA.disabled False
-          , HA.style [ ("height", "20px") ]
-          , HA.type' "number"
-          , HA.min <| toString 10
-          ]
-          []
-
-      , input
-          [ HA.placeholder "cols"
-          , let showString = if model.cols >= 10 then model.cols |> toString else ""
-            in HA.value showString
-          , on "input" targetValue (Signal.message address << SetCols)
-          , HA.disabled False
-          , HA.style [ ("height", "20px") ]
-          , HA.type' "number"
-          , HA.min <| toString 10
-          ]
-          []
-
       , div 
           [floatLeft] 
-          [ button -- start/stop toggle button.
+          [ "rows=" ++ (model.rows |> toString) |> text
+          , input
+              [ HA.placeholder "rows"
+              , let showString = if model.rows >= 10 then model.rows |> toString else ""
+                in HA.value showString
+              , on "input" targetValue (Signal.message address << SetRows)
+              , HA.disabled False
+              , HA.style [ ("height", "20px") ]
+              , HA.type' "range"
+              , HA.min <| toString 10
+              , HA.max <| toString 40
+              ]
+              []
+          , br [] []
+          , "cols=" ++ (model.cols |> toString) |> text
+          , input
+              [ HA.placeholder "cols"
+              , let showString = if model.cols >= 10 then model.cols |> toString else ""
+                in HA.value showString
+              , on "input" targetValue (Signal.message address << SetCols)
+              , HA.disabled False
+              , HA.style [ ("height", "20px") ]
+              , HA.type' "range"
+              , HA.min <| toString 10
+              , HA.max <| toString 40
+              ]
+              []
+          , br [] []
+          , button -- start/stop toggle button.
               [ onClick address Generate ]
-              [ text "Generate"] ]
+              [ text "Generate"] 
+          ]
       , div 
           [floatLeft] 
           [ Svg.svg 
@@ -178,7 +185,7 @@ unvisitedNeighbors model (row,col) =
 update' : Model -> List Matrix.Location -> Model
 update' model current = 
   case head current of
-    Nothing -> model
+    Nothing -> {model | state = Generated }
     Just previous ->
       let neighbors = unvisitedNeighbors model previous
       in if (length neighbors) > 0 then
@@ -200,8 +207,8 @@ update : Action -> Model -> Model
 update action model = 
   case action of 
     Tick t -> 
-      if (model.state == Initial) then { model | seedStarter = t } 
-      else update' model model.current 
+      if (model.state == Generating) then update' model model.current 
+      else { model | seedStarter = t } 
 
     Generate -> 
       init model.rows model.cols Generating model.seedStarter
@@ -209,12 +216,12 @@ update action model =
     SetRows countString -> 
       let v' = toInt countString |> R.withDefault 10
           v = if v' < 10 then 10 else v'
-      in { model | rows = v }
+      in init v model.cols Initial model.seedStarter
 
     SetCols countString -> 
       let v' = toInt countString |> R.withDefault 10
           v = if v' < 10 then 10 else v'
-      in { model | cols = v }
+      in init model.rows v Initial model.seedStarter
 
     NoOp -> model 
 
