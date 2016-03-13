@@ -5,7 +5,7 @@ import Mouse
 import Random exposing (Seed)
 import Matrix.Random
 import Time exposing (every, second)
-import Set exposing (..)
+import Set exposing (Set, fromList)
 import List exposing (..)
 import String exposing (join)
 import Html exposing (Html, br, input, h1, h2, text, div, button, fromElement)
@@ -94,7 +94,7 @@ view address model =
                   , y2 <| toString (row    + 1)
                   , redLineStyle ] []
 
-    doors = (List.map doorToLine <| toList model.doors )
+    doors = (List.map doorToLine <| Set.toList model.doors )
 
     circleInBox (row,col) color = 
       Svg.circle [ r "0.25"
@@ -117,7 +117,7 @@ view address model =
           Just c -> [circleInBox c "black"]
 
     maze = 
-      if model.animate || model.state == Generated || model.state == Initial 
+      if model.animate || model.state != Generating
       then [ Svg.g [] <| doors ++ borders ++ unvisited ++ current ] 
       else [ Svg.g [] <| borders ]
   in
@@ -126,48 +126,19 @@ view address model =
       [ h2 [centerTitle] [text "Maze Generator"]
       , div 
           [floatLeft] 
-          [ input
-              [ HA.placeholder "rows"
-              , let showString = if model.rows >= minSide then model.rows |> toString else ""
-                in HA.value showString
-              , HE.on "input" HE.targetValue (Signal.message address << SetRows)
-              , HA.disabled False
-              , HA.style [ ("height", "20px") ]
-              , HA.type' "range"
-              , HA.min <| toString minSide
-              , HA.max <| toString maxSide
-              ]
-              []
-          , "rows=" ++ (model.rows |> toString) |> text
-          , br [] []
+          (  slider "rows" minSide maxSide model.rows address SetRows
+          ++ [ br [] [] ] 
 
-          , input
-              [ HA.placeholder "cols"
-              , let showString = if model.cols >= minSide then model.cols |> toString else ""
-                in HA.value showString
-              , HE.on "input" HE.targetValue (Signal.message address << SetCols)
-              , HA.disabled False
-              , HA.style [ ("height", "20px") ]
-              , HA.type' "range"
-              , HA.min <| toString minSide
-              , HA.max <| toString maxSide
-              ]
-              []
-          , "cols=" ++ (model.cols |> toString) |> text
-          , br [] []
+          ++ slider "cols" minSide maxSide model.cols address SetCols
+          ++ [ br [] [] ]
 
-          , input
-              [ HA.type' "checkbox"
-              , HA.checked model.animate
-              , HE.on "change" HE.targetChecked (Signal.message address << SetAnimate)
-              ]
-              []
-          , text "Animate"
-          , br [] []
-          , button -- start/stop toggle button.
-              [ HE.onClick address Generate ]
-              [ text "Generate"] 
-          ]
+          ++ checkbox "Animate" model.animate address SetAnimate 
+          ++ [ br [] [] ]
+
+          ++ [ button 
+                 [ HE.onClick address Generate ]
+                 [ text "Generate"] 
+             ] )
       , div 
           [floatLeft] 
           [ Svg.svg 
@@ -175,14 +146,37 @@ view address model =
               , width (toString w)
               , height (toString h)
               , viewBox (join " " 
-                           [ 0 |> toString
-                           , 0 |> toString
+                           [ 0          |> toString
+                           , 0          |> toString
                            , model.cols |> toString
                            , model.rows |> toString ])
               ] 
               maze
           ]
       ] 
+
+checkbox label checked address action = 
+  [ input
+      [ HA.type' "checkbox"
+      , HA.checked checked
+      , HE.on "change" HE.targetChecked (Signal.message address << action)
+      ]
+      []
+    , text label
+  ]
+
+slider name min max current address action = 
+  [ input
+    [ HA.value (if current >= min then current |> toString else "")
+    , HE.on "input" HE.targetValue (Signal.message address << action)
+    , HA.disabled False
+    , HA.type' "range"
+    , HA.min <| toString min
+    , HA.max <| toString max
+    ]
+    []
+  , text <| name ++ "=" ++ (current |> toString)
+  ]
 
 floatLeft = HA.style [ ("float", "left") ] 
 centerTitle = HA.style [ ( "text-align", "center") ] 
