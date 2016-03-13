@@ -117,7 +117,7 @@ view address model =
           Just c -> [circleInBox c "black"]
 
     maze = 
-      if model.animate || model.state != Generating
+      if model.animate || model.state /= Generating
       then [ Svg.g [] <| doors ++ borders ++ unvisited ++ current ] 
       else [ Svg.g [] <| borders ]
   in
@@ -169,7 +169,6 @@ slider name min max current address action =
   [ input
     [ HA.value (if current >= min then current |> toString else "")
     , HE.on "input" HE.targetValue (Signal.message address << action)
-    , HA.disabled False
     , HA.type' "range"
     , HA.min <| toString min
     , HA.max <| toString max
