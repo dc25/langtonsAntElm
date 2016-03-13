@@ -11650,42 +11650,31 @@ Elm.Main.make = function (_elm) {
             }
       }
    });
-   var update = F2(function (action,model) {
-      var stringToCellCount = function (s) {    var v$ = A2($Result.withDefault,10,$String.toInt(s));return _U.cmp(v$,10) < 0 ? 10 : v$;};
-      var _p8 = action;
-      switch (_p8.ctor)
-      {case "Tick": var _p9 = _p8._0;
-           return _U.eq(model.state,Generating) ? A2(update$,model,_p9) : _U.update(model,{seedStarter: _p9});
-         case "Generate": return A5(init,model.rows,model.cols,model.animate,Generating,model.seedStarter);
-         case "SetRows": return A5(init,stringToCellCount(_p8._0),model.cols,model.animate,Initial,model.seedStarter);
-         case "SetCols": return A5(init,model.rows,stringToCellCount(_p8._0),model.animate,Initial,model.seedStarter);
-         case "SetAnimate": return _U.update(model,{animate: _p8._0});
-         default: return model;}
-   });
    var dt = 1.0e-3;
    var tickSignal = A2($Signal.map,function (t) {    return Tick($Basics.round(t));},$Time.every(dt * $Time.second));
    var actionSignal = $Signal.mergeMany(_U.list([tickSignal,control.signal]));
-   var modelSignal = A3($Signal.foldp,update,A5(init,21,36,false,Initial,0),actionSignal);
    var h = 700;
    var w = 700;
+   var maxSide = 40;
+   var minSide = 10;
    var view = F2(function (address,model) {
-      var circleInBox = F2(function (_p10,color) {
-         var _p11 = _p10;
+      var circleInBox = F2(function (_p8,color) {
+         var _p9 = _p8;
          return A2($Svg.circle,
          _U.list([$Svg$Attributes.r("0.25")
                  ,$Svg$Attributes.fill(color)
-                 ,$Svg$Attributes.cx($Basics.toString($Basics.toFloat(_p11._1) + 0.5))
-                 ,$Svg$Attributes.cy($Basics.toString($Basics.toFloat(_p11._0) + 0.5))]),
+                 ,$Svg$Attributes.cx($Basics.toString($Basics.toFloat(_p9._1) + 0.5))
+                 ,$Svg$Attributes.cy($Basics.toString($Basics.toFloat(_p9._0) + 0.5))]),
          _U.list([]));
       });
       var showUnvisited = F2(function (location,box) {    return box ? _U.list([]) : _U.list([A2(circleInBox,location,"yellow")]);});
       var unvisited = $List.concat($Matrix.flatten(A2($Matrix.mapWithLocation,showUnvisited,model.boxes)));
       var current = function () {
-         var _p12 = $List.head(model.current);
-         if (_p12.ctor === "Nothing") {
+         var _p10 = $List.head(model.current);
+         if (_p10.ctor === "Nothing") {
                return _U.list([]);
             } else {
-               return _U.list([A2(circleInBox,_p12._0,"black")]);
+               return _U.list([A2(circleInBox,_p10._0,"black")]);
             }
       }();
       var y2Max = $Svg$Attributes.y2($Basics.toString(model.rows));
@@ -11698,12 +11687,12 @@ Elm.Main.make = function (_elm) {
       var x1Min = $Svg$Attributes.x1($Basics.toString(0));
       var redLineStyle = $Svg$Attributes.style("stroke:red;stroke-width:0.1");
       var doorToLine = function (door) {
-         var _p13 = $Basics.fst(door);
-         var row = _p13._0;
-         var column = _p13._1;
-         var _p14 = _U.eq($Basics.snd(door),right) ? {ctor: "_Tuple2",_0: 1,_1: 0} : {ctor: "_Tuple2",_0: 0,_1: 1};
-         var deltaX1 = _p14._0;
-         var deltaY1 = _p14._1;
+         var _p11 = $Basics.fst(door);
+         var row = _p11._0;
+         var column = _p11._1;
+         var _p12 = _U.eq($Basics.snd(door),right) ? {ctor: "_Tuple2",_0: 1,_1: 0} : {ctor: "_Tuple2",_0: 0,_1: 1};
+         var deltaX1 = _p12._0;
+         var deltaY1 = _p12._1;
          return A2($Svg.line,
          _U.list([$Svg$Attributes.x1($Basics.toString(column + deltaX1))
                  ,$Svg$Attributes.y1($Basics.toString(row + deltaY1))
@@ -11729,30 +11718,30 @@ Elm.Main.make = function (_elm) {
               _U.list([A2($Html.input,
                       _U.list([$Html$Attributes.placeholder("rows")
                               ,function () {
-                                 var showString = _U.cmp(model.rows,10) > -1 ? $Basics.toString(model.rows) : "";
+                                 var showString = _U.cmp(model.rows,minSide) > -1 ? $Basics.toString(model.rows) : "";
                                  return $Html$Attributes.value(showString);
                               }()
-                              ,A3($Html$Events.on,"input",$Html$Events.targetValue,function (_p15) {    return A2($Signal.message,address,SetRows(_p15));})
+                              ,A3($Html$Events.on,"input",$Html$Events.targetValue,function (_p13) {    return A2($Signal.message,address,SetRows(_p13));})
                               ,$Html$Attributes.disabled(false)
                               ,$Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "height",_1: "20px"}]))
                               ,$Html$Attributes.type$("range")
-                              ,$Html$Attributes.min($Basics.toString(10))
-                              ,$Html$Attributes.max($Basics.toString(40))]),
+                              ,$Html$Attributes.min($Basics.toString(minSide))
+                              ,$Html$Attributes.max($Basics.toString(maxSide))]),
                       _U.list([]))
                       ,$Html.text(A2($Basics._op["++"],"rows=",$Basics.toString(model.rows)))
                       ,A2($Html.br,_U.list([]),_U.list([]))
                       ,A2($Html.input,
                       _U.list([$Html$Attributes.placeholder("cols")
                               ,function () {
-                                 var showString = _U.cmp(model.cols,10) > -1 ? $Basics.toString(model.cols) : "";
+                                 var showString = _U.cmp(model.cols,minSide) > -1 ? $Basics.toString(model.cols) : "";
                                  return $Html$Attributes.value(showString);
                               }()
-                              ,A3($Html$Events.on,"input",$Html$Events.targetValue,function (_p16) {    return A2($Signal.message,address,SetCols(_p16));})
+                              ,A3($Html$Events.on,"input",$Html$Events.targetValue,function (_p14) {    return A2($Signal.message,address,SetCols(_p14));})
                               ,$Html$Attributes.disabled(false)
                               ,$Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "height",_1: "20px"}]))
                               ,$Html$Attributes.type$("range")
-                              ,$Html$Attributes.min($Basics.toString(10))
-                              ,$Html$Attributes.max($Basics.toString(40))]),
+                              ,$Html$Attributes.min($Basics.toString(minSide))
+                              ,$Html$Attributes.max($Basics.toString(maxSide))]),
                       _U.list([]))
                       ,$Html.text(A2($Basics._op["++"],"cols=",$Basics.toString(model.cols)))
                       ,A2($Html.br,_U.list([]),_U.list([]))
@@ -11762,8 +11751,8 @@ Elm.Main.make = function (_elm) {
                               ,A3($Html$Events.on,
                               "change",
                               $Html$Events.targetChecked,
-                              function (_p17) {
-                                 return A2($Signal.message,address,SetAnimate(_p17));
+                              function (_p15) {
+                                 return A2($Signal.message,address,SetAnimate(_p15));
                               })]),
                       _U.list([]))
                       ,$Html.text("Animate")
@@ -11780,8 +11769,23 @@ Elm.Main.make = function (_elm) {
                       _U.list([$Basics.toString(0),$Basics.toString(0),$Basics.toString(model.cols),$Basics.toString(model.rows)])))]),
               maze)]))]));
    });
+   var update = F2(function (action,model) {
+      var stringToCellCount = function (s) {    var v$ = A2($Result.withDefault,minSide,$String.toInt(s));return _U.cmp(v$,minSide) < 0 ? minSide : v$;};
+      var _p16 = action;
+      switch (_p16.ctor)
+      {case "Tick": var _p17 = _p16._0;
+           return _U.eq(model.state,Generating) ? A2(update$,model,_p17) : _U.update(model,{seedStarter: _p17});
+         case "Generate": return A5(init,model.rows,model.cols,model.animate,Generating,model.seedStarter);
+         case "SetRows": return A5(init,stringToCellCount(_p16._0),model.cols,model.animate,Initial,model.seedStarter);
+         case "SetCols": return A5(init,model.rows,stringToCellCount(_p16._0),model.animate,Initial,model.seedStarter);
+         case "SetAnimate": return _U.update(model,{animate: _p16._0});
+         default: return model;}
+   });
+   var modelSignal = A3($Signal.foldp,update,A5(init,21,36,false,Initial,0),actionSignal);
    var main = A2($Signal.map,view(control.address),modelSignal);
    return _elm.Main.values = {_op: _op
+                             ,minSide: minSide
+                             ,maxSide: maxSide
                              ,w: w
                              ,h: h
                              ,dt: dt
