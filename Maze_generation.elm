@@ -1,6 +1,5 @@
 import Maybe as M
 import Result as R
-import String exposing (toInt)
 import Matrix 
 import Mouse
 import Random exposing (Seed)
@@ -10,11 +9,13 @@ import Set exposing (..)
 import List exposing (..)
 import String exposing (join)
 import Html exposing (Html, br, input, h1, h2, text, div, button, fromElement)
-import Html.Events exposing (on, targetValue, targetChecked, onClick)
+import Html.Events as HE 
 import Html.Attributes as HA
 import Svg 
 import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y2, fill,points, style, width, height, preserveAspectRatio)
 
+minSide = 10
+maxSide = 40
 w = 700
 h = 700
 dt = 0.001
@@ -127,14 +128,14 @@ view address model =
           [floatLeft] 
           [ input
               [ HA.placeholder "rows"
-              , let showString = if model.rows >= 10 then model.rows |> toString else ""
+              , let showString = if model.rows >= minSide then model.rows |> toString else ""
                 in HA.value showString
-              , on "input" targetValue (Signal.message address << SetRows)
+              , HE.on "input" HE.targetValue (Signal.message address << SetRows)
               , HA.disabled False
               , HA.style [ ("height", "20px") ]
               , HA.type' "range"
-              , HA.min <| toString 10
-              , HA.max <| toString 40
+              , HA.min <| toString minSide
+              , HA.max <| toString maxSide
               ]
               []
           , "rows=" ++ (model.rows |> toString) |> text
@@ -142,14 +143,14 @@ view address model =
 
           , input
               [ HA.placeholder "cols"
-              , let showString = if model.cols >= 10 then model.cols |> toString else ""
+              , let showString = if model.cols >= minSide then model.cols |> toString else ""
                 in HA.value showString
-              , on "input" targetValue (Signal.message address << SetCols)
+              , HE.on "input" HE.targetValue (Signal.message address << SetCols)
               , HA.disabled False
               , HA.style [ ("height", "20px") ]
               , HA.type' "range"
-              , HA.min <| toString 10
-              , HA.max <| toString 40
+              , HA.min <| toString minSide
+              , HA.max <| toString maxSide
               ]
               []
           , "cols=" ++ (model.cols |> toString) |> text
@@ -158,13 +159,13 @@ view address model =
           , input
               [ HA.type' "checkbox"
               , HA.checked model.animate
-              , on "change" targetChecked (Signal.message address << SetAnimate)
+              , HE.on "change" HE.targetChecked (Signal.message address << SetAnimate)
               ]
               []
           , text "Animate"
           , br [] []
           , button -- start/stop toggle button.
-              [ onClick address Generate ]
+              [ HE.onClick address Generate ]
               [ text "Generate"] 
           ]
       , div 
@@ -214,8 +215,8 @@ update' model t =
 update : Action -> Model -> Model
 update action model = 
   let stringToCellCount s =
-    let v' = toInt s |> R.withDefault 10
-    in if v' < 10 then 10 else v'
+    let v' = String.toInt s |> R.withDefault minSide
+    in if v' < minSide then minSide else v'
   in case action of 
        Tick t -> 
          if (model.state == Generating) then update' model t
