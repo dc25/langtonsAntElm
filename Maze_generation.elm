@@ -69,8 +69,8 @@ initModel rows cols animate state starter =
 
 view model =
   let
-    greenLineStyle = style "stroke:green;stroke-width:0.3"
-    redLineStyle = style "stroke:red;stroke-width:0.1" 
+    borderLineStyle = style "stroke:green;stroke-width:0.3"
+    wallLineStyle = style "stroke:green;stroke-width:0.1" 
 
     x1Min = x1 <| toString 0
     y1Min = y1 <| toString 0
@@ -81,10 +81,10 @@ view model =
     x2Max = x2 <| toString model.cols
     y2Max = y2 <| toString model.rows
 
-    borders = [ Svg.line [ x1Min, y1Min, x2Max, y2Min, greenLineStyle ] []
-              , Svg.line [ x1Max, y1Min, x2Max, y2Max, greenLineStyle ] []
-              , Svg.line [ x1Max, y1Max, x2Min, y2Max, greenLineStyle ] []
-              , Svg.line [ x1Min, y1Max, x2Min, y2Min, greenLineStyle ] []
+    borders = [ Svg.line [ x1Min, y1Min, x2Max, y2Min, borderLineStyle ] []
+              , Svg.line [ x1Max, y1Min, x2Max, y2Max, borderLineStyle ] []
+              , Svg.line [ x1Max, y1Max, x2Min, y2Max, borderLineStyle ] []
+              , Svg.line [ x1Min, y1Max, x2Min, y2Min, borderLineStyle ] []
               ]
 
     doorToLine door = 
@@ -94,7 +94,7 @@ view model =
                   , y1 <| toString (row    + deltaY1)
                   , x2 <| toString (column + 1)
                   , y2 <| toString (row    + 1)
-                  , redLineStyle ] []
+                  , wallLineStyle ] []
 
     doors = (List.map doorToLine <| Set.toList model.doors )
 
