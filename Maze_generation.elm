@@ -4,13 +4,15 @@ import Matrix
 import Mouse
 import Random exposing (Seed)
 import Matrix.Random
-import Time exposing (every, second)
+import Time exposing (Time, every, second)
 import Set exposing (Set, fromList)
 import List exposing (..)
 import String exposing (join)
-import Html exposing (Html, br, input, h1, h2, text, div, button, fromElement)
+import Html exposing (Html, br, input, h1, h2, text, div, button)
 import Html.Events as HE 
 import Html.Attributes as HA
+import Html.App exposing (program)
+import Json.Decode  as JD
 import Svg 
 import Svg.Attributes exposing (version, viewBox, cx, cy, r, x, y, x1, y1, x2, y2, fill,points, style, width, height, preserveAspectRatio)
 
@@ -48,12 +50,12 @@ initdoors rows cols =
     rights = pairs (pairs [0..rows-1] [0..cols-2]) [right] 
   in downs ++ rights |> fromList
 
-init : Int -> Int -> Bool -> State -> Int -> Model
-init rows cols animate state starter = 
+initModel : Int -> Int -> Bool -> State -> Int -> Model
+initModel rows cols animate state starter = 
   let rowGenerator = Random.int 0 (rows-1)
       colGenerator = Random.int 0 (cols-1)
       locationGenerator = Random.pair rowGenerator colGenerator
-      (c, s)= Random.generate locationGenerator (Random.initialSeed starter)
+      (c, s)= Random.step locationGenerator (Random.initialSeed starter)
   in { rows = rows
      , cols = cols 
      , animate = animate
@@ -65,7 +67,7 @@ init rows cols animate state starter =
      , seed = s
      }
 
-view address model =
+view model =
   let
     greenLineStyle = style "stroke:green;stroke-width:0.3"
     redLineStyle = style "stroke:red;stroke-width:0.1" 
@@ -126,17 +128,17 @@ view address model =
       [ h2 [centerTitle] [text "Maze Generator"]
       , div 
           [floatLeft] 
-          (  slider "rows" minSide maxSide model.rows address SetRows
+          (  slider "rows" minSide maxSide model.rows SetRows
           ++ [ br [] [] ] 
 
-          ++ slider "cols" minSide maxSide model.cols address SetCols
+          ++ slider "cols" minSide maxSide model.cols SetCols
           ++ [ br [] [] ]
 
-          ++ checkbox "Animate" model.animate address SetAnimate 
+          ++ checkbox "Animate" model.animate SetAnimate 
           ++ [ br [] [] ]
 
           ++ [ button 
-                 [ HE.onClick address Generate ]
+                 [ HE.onClick Generate ]
                  [ text "Generate"] 
              ] )
       , div 
@@ -155,20 +157,20 @@ view address model =
           ]
       ] 
 
-checkbox label checked address action = 
+checkbox label checked msg = 
   [ input
       [ HA.type' "checkbox"
       , HA.checked checked
-      , HE.on "change" HE.targetChecked (Signal.message address << action)
+      , HE.on "change" (JD.map msg HE.targetChecked)
       ]
       []
     , text label
   ]
 
-slider name min max current address action = 
+slider name min max current msg = 
   [ input
     [ HA.value (if current >= min then current |> toString else "")
-    , HE.on "input" HE.targetValue (Signal.message address << action)
+    , HE.on "input" (JD.map msg HE.targetValue )
     , HA.type' "range"
     , HA.min <| toString min
     , HA.max <| toString max
@@ -186,14 +188,14 @@ unvisitedNeighbors model (row,col) =
     |> List.filter (\l -> fst l >= 0 && snd l >= 0 && fst l < model.rows && snd l < model.cols)
     |> List.filter (\l -> (Matrix.get l model.boxes) |> M.withDefault False |> not)
 
-update' : Model -> Int -> Model
-update' model t = 
+updateModel' : Model -> Int -> Model
+updateModel' model t = 
   case head model.current of
     Nothing -> {model | state = Generated, seedStarter = t }
     Just prev ->
       let neighbors = unvisitedNeighbors model prev
       in if (length neighbors) > 0 then
-           let (neighborIndex, seed) = Random.generate (Random.int 0 (length neighbors-1)) model.seed
+           let (neighborIndex, seed) = Random.step (Random.int 0 (length neighbors-1)) model.seed
                next = head (drop neighborIndex neighbors) |> M.withDefault (0,0) 
                boxes = Matrix.set next True model.boxes 
                dir = if fst prev == fst next then right else down
@@ -203,40 +205,45 @@ update' model t =
            in {model | boxes=boxes, doors=doors, current=next :: model.current, seed=seed, seedStarter = t}
          else
            let tailCurrent = tail model.current |> M.withDefault [] 
-           in update' {model | current = tailCurrent} t
+           in updateModel' {model | current = tailCurrent} t
 
-update : Action -> Model -> Model
-update action model = 
+updateModel : Msg -> Model -> Model
+updateModel msg model = 
   let stringToCellCount s =
     let v' = String.toInt s |> R.withDefault minSide
     in if v' < minSide then minSide else v'
-  in case action of 
-       Tick t -> 
-         if (model.state == Generating) then update' model t
-         else { model | seedStarter = t } 
+  in case msg of 
+       Tick tf -> 
+         let t = truncate tf
+         in 
+           if (model.state == Generating) then updateModel' model t
+           else { model | seedStarter = t } 
 
        Generate -> 
-         init model.rows model.cols model.animate Generating model.seedStarter
+         initModel model.rows model.cols model.animate Generating model.seedStarter
 
        SetRows countString -> 
-         init (stringToCellCount countString) model.cols model.animate Initial model.seedStarter
+         initModel (stringToCellCount countString) model.cols model.animate Initial model.seedStarter
 
        SetCols countString -> 
-         init model.rows (stringToCellCount countString) model.animate Initial model.seedStarter
+         initModel model.rows (stringToCellCount countString) model.animate Initial model.seedStarter
 
        SetAnimate b -> 
          { model | animate = b } 
 
        NoOp -> model 
 
-control = Signal.mailbox NoOp
+type Msg = NoOp | Tick Time | Generate | SetRows String | SetCols String | SetAnimate Bool
 
-type Action = NoOp | Tick Int | Generate | SetRows String | SetCols String | SetAnimate Bool
+subscriptions model = every (dt * second) Tick
 
-tickSignal = (every (dt * second)) |> Signal.map (\t -> Tick (round t)) 
-
-actionSignal = Signal.mergeMany [tickSignal, control.signal]
-
-modelSignal = Signal.foldp update (init 21 36 False Initial 0) actionSignal
-
-main = Signal.map (view control.address) modelSignal 
+main =
+  let 
+    update msg model = (updateModel msg model, Cmd.none)
+    init = (initModel 21 36 False Initial 0, Cmd.none)
+  in program 
+       { init = init
+       , view = view
+       , update = update
+       , subscriptions = subscriptions
+       }
