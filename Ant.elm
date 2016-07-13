@@ -87,32 +87,36 @@ view model =
               maze
           ]
 
-updateModel : Msg -> Model -> Model
-updateModel msg model = 
+updateModel : Model -> Model
+updateModel model = 
       let current = model.location
-          currentValue = Matrix.get current model.boxes |> M.withDefault False
           inBox =    fst current >= 0 && fst current < model.cols
                   && snd current >= 0 && snd current < model.rows
-          dir = case (model.direction, currentValue) of
-                   (North, True) -> East
-                   (East, True) -> South
-                   (South, True) -> West
-                   (West, True) -> North
+      in if not inBox then
+           model
+         else
+           let currentValue = Matrix.get current model.boxes |> M.withDefault False
 
-                   (North, False) -> West
-                   (East, False) -> North
-                   (South, False) -> East
-                   (West, False) -> South
-
-          next = case dir of
-                   North -> (fst current, snd current+1)
-                   South -> (fst current, snd current-1)
-                   East -> (fst current+1, snd current)
-                   West -> (fst current-1, snd current)
-
-          boxes = Matrix.set current (not currentValue) model.boxes 
-      in if inBox then {model | boxes=boxes, location=next, direction=dir}
-                  else model
+               dir = case (model.direction, currentValue) of
+                       (North, True) -> East
+                       (East, True) -> South
+                       (South, True) -> West
+                       (West, True) -> North
+ 
+                       (North, False) -> West
+                       (East, False) -> North
+                       (South, False) -> East
+                       (West, False) -> South
+ 
+               next = case dir of
+                        North -> (fst current, snd current+1)
+                        South -> (fst current, snd current-1)
+                        East -> (fst current+1, snd current)
+                        West -> (fst current-1, snd current)
+ 
+               boxes = Matrix.set current (not currentValue) model.boxes 
+ 
+           in {model | boxes=boxes, location=next, direction=dir}
 
 type Msg = Tick Time 
 
@@ -120,7 +124,7 @@ subscriptions model = every (dt * second) Tick
 
 main =
   let 
-    update msg model = (updateModel msg model, Cmd.none)
+    update msg model = (updateModel model, Cmd.none)
     init = (initModel 100 100 , Cmd.none)
   in program 
        { init = init

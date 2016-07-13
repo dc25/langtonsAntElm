@@ -8323,9 +8323,20 @@ var _user$project$Main$initModel = F2(
 			direction: _user$project$Main$North
 		};
 	});
-var _user$project$Main$updateModel = F2(
-	function (msg, model) {
-		var current = model.location;
+var _user$project$Main$updateModel = function (model) {
+	var current = model.location;
+	var inBox = (_elm_lang$core$Native_Utils.cmp(
+		_elm_lang$core$Basics$fst(current),
+		0) > -1) && ((_elm_lang$core$Native_Utils.cmp(
+		_elm_lang$core$Basics$fst(current),
+		model.cols) < 0) && ((_elm_lang$core$Native_Utils.cmp(
+		_elm_lang$core$Basics$snd(current),
+		0) > -1) && (_elm_lang$core$Native_Utils.cmp(
+		_elm_lang$core$Basics$snd(current),
+		model.rows) < 0)));
+	if (_elm_lang$core$Basics$not(inBox)) {
+		return model;
+	} else {
 		var currentValue = A2(
 			_elm_lang$core$Maybe$withDefault,
 			false,
@@ -8356,15 +8367,6 @@ var _user$project$Main$updateModel = F2(
 				}
 			}
 		}();
-		var inBox = (_elm_lang$core$Native_Utils.cmp(
-			_elm_lang$core$Basics$fst(current),
-			0) > -1) && ((_elm_lang$core$Native_Utils.cmp(
-			_elm_lang$core$Basics$fst(current),
-			model.cols) < 0) && ((_elm_lang$core$Native_Utils.cmp(
-			_elm_lang$core$Basics$snd(current),
-			0) > -1) && (_elm_lang$core$Native_Utils.cmp(
-			_elm_lang$core$Basics$snd(current),
-			model.rows) < 0)));
 		var next = function () {
 			var _p3 = dir;
 			switch (_p3.ctor) {
@@ -8399,10 +8401,11 @@ var _user$project$Main$updateModel = F2(
 			current,
 			_elm_lang$core$Basics$not(currentValue),
 			model.boxes);
-		return inBox ? _elm_lang$core$Native_Utils.update(
+		return _elm_lang$core$Native_Utils.update(
 			model,
-			{boxes: boxes, location: next, direction: dir}) : model;
-	});
+			{boxes: boxes, location: next, direction: dir});
+	}
+};
 var _user$project$Main$Tick = function (a) {
 	return {ctor: 'Tick', _0: a};
 };
@@ -8420,7 +8423,7 @@ var _user$project$Main$main = {
 			function (msg, model) {
 				return {
 					ctor: '_Tuple2',
-					_0: A2(_user$project$Main$updateModel, msg, model),
+					_0: _user$project$Main$updateModel(model),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			});
