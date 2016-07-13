@@ -8308,7 +8308,7 @@ var _user$project$Main$South = {ctor: 'South'};
 var _user$project$Main$West = {ctor: 'West'};
 var _user$project$Main$North = {ctor: 'North'};
 var _user$project$Main$initModel = F2(
-	function (rows, cols) {
+	function (cols, rows) {
 		return {
 			rows: rows,
 			cols: cols,
@@ -8319,20 +8319,20 @@ var _user$project$Main$initModel = F2(
 				function (location) {
 					return false;
 				}),
-			location: {ctor: '_Tuple2', _0: (cols / 2) | 0, _1: (rows / 2) | 0},
+			location: {ctor: '_Tuple2', _0: (rows / 2) | 0, _1: (cols / 2) | 0},
 			direction: _user$project$Main$North
 		};
 	});
 var _user$project$Main$updateModel = function (model) {
 	var current = model.location;
 	var inBox = (_elm_lang$core$Native_Utils.cmp(
-		_elm_lang$core$Basics$fst(current),
+		_elm_lang$core$Basics$snd(current),
 		0) > -1) && ((_elm_lang$core$Native_Utils.cmp(
-		_elm_lang$core$Basics$fst(current),
+		_elm_lang$core$Basics$snd(current),
 		model.cols) < 0) && ((_elm_lang$core$Native_Utils.cmp(
-		_elm_lang$core$Basics$snd(current),
+		_elm_lang$core$Basics$fst(current),
 		0) > -1) && (_elm_lang$core$Native_Utils.cmp(
-		_elm_lang$core$Basics$snd(current),
+		_elm_lang$core$Basics$fst(current),
 		model.rows) < 0)));
 	if (_elm_lang$core$Basics$not(inBox)) {
 		return model;
@@ -8373,26 +8373,26 @@ var _user$project$Main$updateModel = function (model) {
 				case 'North':
 					return {
 						ctor: '_Tuple2',
-						_0: _elm_lang$core$Basics$fst(current),
-						_1: _elm_lang$core$Basics$snd(current) + 1
+						_0: _elm_lang$core$Basics$fst(current) + 1,
+						_1: _elm_lang$core$Basics$snd(current)
 					};
 				case 'South':
 					return {
 						ctor: '_Tuple2',
-						_0: _elm_lang$core$Basics$fst(current),
-						_1: _elm_lang$core$Basics$snd(current) - 1
+						_0: _elm_lang$core$Basics$fst(current) - 1,
+						_1: _elm_lang$core$Basics$snd(current)
 					};
 				case 'East':
 					return {
 						ctor: '_Tuple2',
-						_0: _elm_lang$core$Basics$fst(current) + 1,
-						_1: _elm_lang$core$Basics$snd(current)
+						_0: _elm_lang$core$Basics$fst(current),
+						_1: _elm_lang$core$Basics$snd(current) + 1
 					};
 				default:
 					return {
 						ctor: '_Tuple2',
-						_0: _elm_lang$core$Basics$fst(current) - 1,
-						_1: _elm_lang$core$Basics$snd(current)
+						_0: _elm_lang$core$Basics$fst(current),
+						_1: _elm_lang$core$Basics$snd(current) - 1
 					};
 			}
 		}();
