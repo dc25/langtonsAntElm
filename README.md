@@ -1,7 +1,7 @@
-# Maze Generation coded in Elm
+# Langton's Ant coded in Elm
 
-This is an Elm solution for the Rosetta Code task : "Maze Generation"
-http://rosettacode.org/wiki/Maze_generation
+This is an Elm solution for the Rosetta Code task : "Langton's Ant"
+http://rosettacode.org/wiki/Langton%27s_ant
 
-Follow the link below to see it in action:
-http://dc25.github.io/mazeGenerationElm
+Follow this link to see it in action:
+http://dc25.github.io/langtonsAntElm
