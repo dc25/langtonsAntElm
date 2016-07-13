@@ -23,11 +23,11 @@ type alias Model =
   }
 
 initModel : Int -> Int -> Model
-initModel rows cols = 
+initModel cols rows = 
      { rows = rows
      , cols = cols 
      , boxes = Matrix.matrix rows cols (\location -> False)
-     , location = (cols//2,rows//2)
+     , location = (rows//2,cols//2)
      , direction = North
      }
 
@@ -71,9 +71,7 @@ view model =
   in
       div 
           [] 
-          [ 
-    
-            h1 [] [text "Langton's Ant"]
+          [ h1 [] [text "Langton's Ant"]
           , Svg.svg 
               [ version "1.1"
               , width (toString w)
@@ -90,8 +88,8 @@ view model =
 updateModel : Model -> Model
 updateModel model = 
       let current = model.location
-          inBox =    fst current >= 0 && fst current < model.cols
-                  && snd current >= 0 && snd current < model.rows
+          inBox =    snd current >= 0 && snd current < model.cols
+                  && fst current >= 0 && fst current < model.rows
       in if not inBox then
            model
          else
@@ -109,10 +107,10 @@ updateModel model =
                        (West, False) -> South
  
                next = case dir of
-                        North -> (fst current, snd current+1)
-                        South -> (fst current, snd current-1)
-                        East -> (fst current+1, snd current)
-                        West -> (fst current-1, snd current)
+                        North -> (fst current+1, snd current)
+                        South -> (fst current-1, snd current)
+                        East -> (fst current, snd current+1)
+                        West -> (fst current, snd current-1)
  
                boxes = Matrix.set current (not currentValue) model.boxes 
  
